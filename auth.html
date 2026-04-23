@@ -297,6 +297,29 @@
     .auth-card { padding: 28px 20px; }
     .auth-title { font-size: 26px; }
   }
+
+  .nav-links {
+    display: flex; align-items: center; gap: 28px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted); text-decoration: none;
+    font-size: 14px; font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--primary), #7B6FFF);
+    color: #fff !important;
+    padding: 9px 20px; border-radius: 50px;
+    font-weight: 600 !important;
+    transition: opacity 0.2s !important;
+  }
+  .nav-cta:hover { opacity: 0.9; }
+  @media (max-width: 768px) {
+    .nav-links { display: none !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -304,8 +327,8 @@
 <div class="bg-glow"></div>
 
 <nav>
-  <a href="postly-v2.html" class="logo">Postly</a>
-  <a href="postly-v2.html" class="nav-back">← Retour</a>
+  <a href="index.html" class="logo">Postly</a>
+  <a href="index.html" class="nav-back">← Retour</a>
 </nav>
 
 <main>
@@ -498,7 +521,7 @@
       btn.disabled = false;
       btn.classList.remove('loading');
       btn.textContent = 'Se connecter';
-      window.location.href = 'postly-generator.html';
+      window.location.href = 'generator.html';
     }, 1500);
   }
 

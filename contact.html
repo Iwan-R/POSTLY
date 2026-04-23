@@ -343,14 +343,37 @@
     .form-card { padding: 24px 20px; }
     footer { padding: 24px 20px; flex-direction: column; align-items: flex-start; }
   }
+
+  .nav-links {
+    display: flex; align-items: center; gap: 28px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted); text-decoration: none;
+    font-size: 14px; font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--primary), #7B6FFF);
+    color: #fff !important;
+    padding: 9px 20px; border-radius: 50px;
+    font-weight: 600 !important;
+    transition: opacity 0.2s !important;
+  }
+  .nav-cta:hover { opacity: 0.9; }
+  @media (max-width: 768px) {
+    .nav-links { display: none !important; }
+  }
+
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="postly-v2.html" class="logo">Postly</a>
+  <a href="index.html" class="logo">Postly</a>
   <div class="nav-right">
-    <a href="postly-v2.html" class="nav-back">← Retour</a>
+    <a href="index.html" class="nav-back">← Retour</a>
     <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -358,10 +381,10 @@
 </nav>
 
 <div class="mobile-menu" id="mobileMenu">
-  <a href="postly-v2.html">Accueil</a>
-  <a href="postly-generator.html">Générateur</a>
+  <a href="index.html">Accueil</a>
+  <a href="generator.html">Générateur</a>
   <div style="height:1px;background:rgba(255,255,255,0.07);margin:4px 0;"></div>
-  <a href="postly-auth.html" style="background:linear-gradient(135deg,#5A4BFF,#7B6FFF);color:#fff;font-weight:600;border-radius:10px;justify-content:center;">Connexion / Inscription</a>
+  <a href="auth.html" style="background:linear-gradient(135deg,#5A4BFF,#7B6FFF);color:#fff;font-weight:600;border-radius:10px;justify-content:center;">Connexion / Inscription</a>
 </div>
 
 <main>
@@ -444,12 +467,12 @@
 </main>
 
 <footer>
-  <a href="postly-v2.html" class="footer-logo">Postly</a>
+  <a href="index.html" class="footer-logo">Postly</a>
     <div class="footer-links">
-    <a href="postly-about.html">À propos</a>
-    <a href="postly-contact.html">Contact</a>
-    <a href="postly-cgu.html">CGU</a>
-    <a href="postly-confidentialite.html">Confidentialité</a>
+    <a href="about.html">À propos</a>
+    <a href="contact.html">Contact</a>
+    <a href="cgu.html">CGU</a>
+    <a href="confidentialite.html">Confidentialité</a>
   </div>
   <div class="footer-copy">© 2026 Postly. Tous droits réservés.</div>
 </footer>
