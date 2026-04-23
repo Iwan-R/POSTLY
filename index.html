@@ -33,9 +33,9 @@
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 48px;
-    backdrop-filter: blur(20px);
-    background: rgba(7,6,15,0.7);
+    padding: 18px 48px;
+    backdrop-filter: blur(24px);
+    background: rgba(7,6,15,0.85);
     border-bottom: 1px solid var(--border);
   }
 
@@ -51,7 +51,7 @@
   }
 
   .nav-links {
-    display: flex; align-items: center; gap: 36px;
+    display: flex; align-items: center; gap: 32px;
     list-style: none;
   }
 
@@ -72,6 +72,8 @@
     transition: opacity 0.2s, transform 0.2s !important;
   }
   .nav-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  .hamburger { display: none; }
 
   /* HERO */
   .hero {
@@ -668,6 +670,7 @@
   @media (max-width: 768px) {
     .hamburger { display: flex; }
     .nav-links { display: none !important; }
+    .hamburger { display: flex !important; }
   }
 </style>
 </head>
@@ -677,7 +680,6 @@
 <nav>
   <a href="index.html" class="logo" style="text-decoration:none;">Postly</a>
   <ul class="nav-links">
-    <li><a href="index.html">Accueil</a></li>
     <li><a href="generator.html">Générateur</a></li>
     <li><a href="dashboard.html">Dashboard</a></li>
     <li><a href="about.html">À propos</a></li>
