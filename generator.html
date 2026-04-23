@@ -863,8 +863,12 @@
 
   async function generate() {
     // AUTH CHECK — Supabase session
-    const { data: { session } } = await window.supabaseClient.auth.getSession();
-    if (!session) {
+    try {
+      const supabase = window.supabaseClient;
+      if (!supabase) { window.location.href = 'auth.html'; return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { window.location.href = 'auth.html'; return; }
+    } catch(e) {
       window.location.href = 'auth.html';
       return;
     }
