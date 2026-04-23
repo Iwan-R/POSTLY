@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postly — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #5A4BFF;
+    --pink: #FF4DA6;
+    --orange: #FF8A4C;
+    --dark: #07060F;
+    --dark2: #0E0C1E;
+    --card: #110F22;
+    --card2: #16132a;
+    --border: rgba(255,255,255,0.07);
+    --text: #E8E6FF;
+    --muted: rgba(232,230,255,0.45);
+    --success: #00E5A0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--dark); color: var(--text);
+    min-height: 100vh; overflow-x: hidden;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 40px;
+    backdrop-filter: blur(24px);
+    background: rgba(7,6,15,0.85);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--pink) 25%, var(--orange) 50%, var(--pink) 75%, var(--primary) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; animation: gradientShift 4s linear infinite;
+    text-decoration: none;
+  }
+
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+
+  .nav-badge {
+    background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.25);
+    color: var(--success); font-size: 12px; font-weight: 600;
+    padding: 4px 12px; border-radius: 50px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nav-badge::before {
+    content: ''; width: 6px; height: 6px;
+    background: var(--success); border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  .hamburger {
+    display: none; flex-direction: column; gap: 5px;
+    cursor: pointer; padding: 4px; background: transparent; border: none;
+  }
+  .hamburger span { display: block; width: 24px; height: 2px; background: var(--text); border-radius: 2px; }
+
+  .mobile-menu {
+    display: none; position: fixed; top: 65px; right: 16px; z-index: 200;
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 8px; min-width: 200px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .mobile-menu.open { display: block; }
+  .mobile-menu a {
+    display: flex; align-items: center; padding: 12px 16px; border-radius: 10px;
+    color: var(--text); text-decoration: none; font-size: 15px; font-weight: 500;
+    transition: background 0.15s;
+  }
+  .mobile-menu a:hover { background: rgba(255,255,255,0.06); }
+
+  @media (max-width: 768px) {
+    .hamburger { display: flex; }
+    nav { padding: 16px 20px; }
+  }
+
+  /* MAIN */
+  main {
+    max-width: 900px; margin: 0 auto;
+    padding: 100px 24px 80px;
+  }
+
+  /* GREETING */
+  .greeting {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+    margin-bottom: 36px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .greeting-left h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(24px, 4vw, 36px); font-weight: 800;
+    letter-spacing: -1px; margin-bottom: 6px;
+  }
+
+  .greeting-left h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--pink) 25%, var(--orange) 50%, var(--pink) 75%, var(--primary) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; animation: gradientShift 4s linear infinite;
+  }
+
+  .greeting-left p { font-size: 14px; color: var(--muted); }
+
+  .plan-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 18px; border-radius: 50px;
+    font-size: 13px; font-weight: 700;
+    font-family: 'Syne', sans-serif;
+  }
+  .plan-starter { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--muted); }
+  .plan-pro { background: rgba(90,75,255,0.15); border: 1px solid rgba(90,75,255,0.4); color: #9B8FFF; }
+  .plan-premium { background: rgba(255,77,166,0.12); border: 1px solid rgba(255,77,166,0.35); color: var(--pink); }
+
+  /* GENERATE CTA */
+  .generate-cta {
+    background: linear-gradient(135deg, var(--primary), #7B6FFF);
+    border-radius: 20px; padding: 28px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
+    box-shadow: 0 4px 32px rgba(90,75,255,0.3);
+    animation: fadeUp 0.4s 0.05s ease both;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .generate-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 48px rgba(90,75,255,0.45); }
+
+  .generate-cta-left h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #fff;
+  }
+  .generate-cta-left p { font-size: 13px; color: rgba(255,255,255,0.7); }
+
+  .generate-cta-btn {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    color: #fff; padding: 12px 24px; border-radius: 50px;
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-bottom: 24px;
+    animation: fadeUp 0.4s 0.1s ease both;
+  }
+
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 24px 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .stat-card:hover { border-color: rgba(90,75,255,0.3); transform: translateY(-2px); }
+
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; margin-bottom: 14px;
+  }
+  .icon-purple { background: rgba(90,75,255,0.15); }
+  .icon-pink { background: rgba(255,77,166,0.12); }
+  .icon-green { background: rgba(0,229,160,0.1); }
+  .icon-orange { background: rgba(255,138,76,0.12); }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px; font-weight: 800; letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* QUOTA CARD */
+  .quota-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.4s 0.15s ease both;
+  }
+
+  .quota-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+  }
+
+  .quota-title {
+    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+  }
+
+  .quota-count {
+    font-size: 14px; color: var(--muted);
+  }
+  .quota-count strong { color: var(--text); }
+
+  .progress-track {
+    height: 8px; background: var(--dark2); border-radius: 50px;
+    overflow: hidden; margin-bottom: 10px;
+  }
+
+  .progress-fill {
+    height: 100%; border-radius: 50px;
+    background: linear-gradient(90deg, var(--primary), var(--pink));
+    animation: fillBar 1s 0.5s ease both;
+    width: 0%;
+  }
+
+  .quota-sub {
+    font-size: 12px; color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+
+  .upgrade-link {
+    color: var(--primary); text-decoration: none; font-weight: 600;
+    font-size: 12px; transition: color 0.2s;
+  }
+  .upgrade-link:hover { color: var(--pink); }
+
+  /* HISTORY */
+  .history-section { animation: fadeUp 0.4s 0.2s ease both; }
+
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+  }
+
+  .see-all {
+    font-size: 13px; color: var(--primary); text-decoration: none; font-weight: 600;
+    transition: color 0.2s;
+  }
+  .see-all:hover { color: var(--pink); }
+
+  .history-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .history-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px 20px;
+    display: flex; align-items: center; gap: 16px;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer; text-decoration: none;
+  }
+  .history-item:hover { border-color: rgba(90,75,255,0.3); transform: translateX(4px); }
+
+  .history-platform {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .platform-tiktok { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); }
+  .platform-ig { background: rgba(255,77,166,0.12); }
+  .platform-yt { background: rgba(255,50,50,0.12); }
+
+  .history-info { flex: 1; min-width: 0; }
+
+  .history-niche {
+    font-size: 14px; font-weight: 600; margin-bottom: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .history-meta {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: var(--muted);
+  }
+
+  .history-tag {
+    background: rgba(90,75,255,0.1); border: 1px solid rgba(90,75,255,0.2);
+    color: #9B8FFF; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500;
+  }
+
+  .history-arrow {
+    color: var(--muted); font-size: 18px; flex-shrink: 0;
+    transition: color 0.2s;
+  }
+  .history-item:hover .history-arrow { color: var(--primary); }
+
+  /* UPGRADE BANNER */
+  .upgrade-banner {
+    background: linear-gradient(135deg, rgba(90,75,255,0.08), rgba(255,77,166,0.05));
+    border: 1px solid rgba(90,75,255,0.2);
+    border-radius: 20px; padding: 24px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px; margin-top: 24px;
+    animation: fadeUp 0.4s 0.25s ease both;
+  }
+
+  .upgrade-banner-left h3 {
+    font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .upgrade-banner-left p { font-size: 13px; color: var(--muted); }
+
+  .upgrade-btn {
+    background: linear-gradient(135deg, var(--primary), #7B6FFF);
+    color: #fff; text-decoration: none;
+    padding: 10px 22px; border-radius: 50px;
+    font-size: 13px; font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    white-space: nowrap;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 4px 20px rgba(90,75,255,0.3);
+  }
+  .upgrade-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border); padding: 28px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .footer-logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--pink) 25%, var(--orange) 50%, var(--pink) 75%, var(--primary) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; animation: gradientShift 4s linear infinite;
+    text-decoration: none;
+  }
+  .footer-copy { font-size: 12px; color: var(--muted); }
+
+  /* RESPONSIVE */
+  @media (max-width: 640px) {
+    main { padding: 90px 16px 60px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .generate-cta { padding: 22px 20px; }
+    footer { padding: 24px 20px; flex-direction: column; }
+  }
+
+  /* HISTORY LOCKED */
+  .history-locked {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px 28px;
+    text-align: center;
+  }
+
+  .lock-icon { font-size: 32px; margin-bottom: 14px; }
+
+  .lock-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 800; margin-bottom: 10px;
+  }
+
+  .lock-desc {
+    font-size: 14px; color: var(--muted); line-height: 1.6;
+    max-width: 360px; margin: 0 auto 24px;
+  }
+
+  .lock-btn {
+    display: inline-flex; align-items: center;
+    background: linear-gradient(135deg, var(--primary), #7B6FFF);
+    color: #fff; text-decoration: none;
+    padding: 12px 24px; border-radius: 50px;
+    font-size: 14px; font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(90,75,255,0.3);
+  }
+  .lock-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(90,75,255,0.45); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="postly-v2.html" class="logo">Postly</a>
+  <div class="nav-right">
+    <div class="nav-badge">IA en ligne</div>
+    <button class="hamburger" onclick="toggleMenu()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="postly-v2.html">Accueil</a>
+  <a href="postly-generator.html">Générateur</a>
+  <a href="postly-dashboard.html">Dashboard</a>
+  <a href="postly-about.html">À propos</a>
+  <a href="postly-contact.html">Contact</a>
+  <div style="height:1px;background:rgba(255,255,255,0.07);margin:4px 0;"></div>
+  <a href="postly-auth.html" style="background:linear-gradient(135deg,#5A4BFF,#7B6FFF);color:#fff;font-weight:600;border-radius:10px;justify-content:center;">Connexion / Inscription</a>
+</div>
+
+<main>
+
+  <!-- GREETING -->
+  <div class="greeting">
+    <div class="greeting-left">
+      <h1>Bonjour, <em>Iwan</em> 👋</h1>
+      <p>Voici un aperçu de ton activité sur Postly.</p>
+    </div>
+    <div class="plan-badge plan-starter">⚡ Plan Starter</div>
+  </div>
+
+  <!-- GENERATE CTA -->
+  <a href="postly-generator.html" class="generate-cta">
+    <div class="generate-cta-left">
+      <h2>Générer du contenu</h2>
+      <p>Idée → Script → Hashtags en 10 secondes</p>
+    </div>
+    <div class="generate-cta-btn">Lancer le générateur →</div>
+  </a>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon icon-purple">✨</div>
+      <div class="stat-value">7</div>
+      <div class="stat-label">Générations ce mois</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon icon-pink">🎵</div>
+      <div class="stat-value">TikTok</div>
+      <div class="stat-label">Plateforme favorite</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon icon-green">🔥</div>
+      <div class="stat-value">Sport</div>
+      <div class="stat-label">Niche favorite</div>
+    </div>
+  </div>
+
+  <!-- QUOTA -->
+  <div class="quota-card">
+    <div class="quota-header">
+      <div class="quota-title">Générations restantes</div>
+      <div class="quota-count"><strong>3</strong> / 10 ce mois</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" style="--fill: 70%; width: 70%;"></div>
+    </div>
+    <div class="quota-sub">
+      <span>Se réinitialise le 1er mai</span>
+      <a href="postly-v2.html#pricing" class="upgrade-link">Passer au Pro →</a>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history-section">
+    <div class="section-header">
+      <div class="section-title">5 dernières générations</div>
+    </div>
+
+    <!-- STARTER : historique verrouillé -->
+    <div class="history-locked">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">Historique disponible en Pro</div>
+      <p class="lock-desc">Retrouve toutes tes générations passées et relance-les en un clic. Disponible à partir du plan Pro.</p>
+      <a href="postly-v2.html#pricing" class="lock-btn">Passer au Pro — 9,99€/mois →</a>
+    </div>
+
+    <!-- PRO / PREMIUM : historique déverrouillé (à afficher quand connecté en Pro) -->
+    <!--
+    <div class="history-list">
+      <a href="postly-generator.html" class="history-item">
+        <div class="history-platform platform-tiktok">🎵</div>
+        <div class="history-info">
+          <div class="history-niche">Musculation débutant — 5 erreurs qui bloquent la progression</div>
+          <div class="history-meta">
+            <span class="history-tag">Long format</span>
+            <span>Aujourd'hui, 13h42</span>
+          </div>
+        </div>
+        <div class="history-arrow">›</div>
+      </a>
+      <a href="postly-generator.html" class="history-item">
+        <div class="history-platform platform-ig">📸</div>
+        <div class="history-info">
+          <div class="history-niche">Finance perso étudiant — économiser 200€/mois facilement</div>
+          <div class="history-meta">
+            <span class="history-tag">Standard</span>
+            <span>Hier, 19h15</span>
+          </div>
+        </div>
+        <div class="history-arrow">›</div>
+      </a>
+    </div>
+    -->
+  </div>
+
+  <!-- UPGRADE BANNER -->
+  <div class="upgrade-banner">
+    <div class="upgrade-banner-left">
+      <h3>Passe au Pro pour générer sans limite</h3>
+      <p>Générations illimitées, hashtags avancés, analyse de tendances — à partir de 9,99€/mois.</p>
+    </div>
+    <a href="postly-v2.html#pricing" class="upgrade-btn">Voir les offres →</a>
+  </div>
+
+</main>
+
+<footer>
+  <a href="postly-v2.html" class="footer-logo">Postly</a>
+    <div class="footer-links">
+    <a href="postly-about.html">À propos</a>
+    <a href="postly-contact.html">Contact</a>
+    <a href="postly-cgu.html">CGU</a>
+    <a href="postly-confidentialite.html">Confidentialité</a>
+  </div>
+  <div class="footer-copy">© 2026 Postly. Tous droits réservés.</div>
+</footer>
+
+<script>
+  function toggleMenu() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('mobileMenu');
+    if (!e.target.closest('.hamburger') && !e.target.closest('.mobile-menu')) {
+      menu.classList.remove('open');
+    }
+  });
+</script>
+
+</body>
+</html>

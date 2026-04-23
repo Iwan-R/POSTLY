@@ -1,0 +1,10 @@
+{
+  "name": "postly",
+  "version": "1.0.0",
+  "description": "Postly - Générateur de contenu viral IA",
+  "dependencies": {
+    "stripe": "^14.11.0",
+    "@supabase/supabase-js": "^2.39.3",
+    "micro": "^10.0.1"
+  }
+}

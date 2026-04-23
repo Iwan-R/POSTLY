@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /generator.html
+Disallow: /api/
+
+Sitemap: https://postly.agency/sitemap.xml
