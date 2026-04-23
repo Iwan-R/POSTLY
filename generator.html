@@ -546,7 +546,12 @@
 
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-session.js"></script>
+  <script>
+    const { createClient } = supabase;
+    window.supabaseClient = createClient('https://rgaftjkxcjxudobfiyyo.supabase.co', 'sb_publishable_EUPSbTeVs3WHYJZ8E2IF2A_NqYsqtiY', {
+      auth: { storage: window.localStorage, storageKey: 'sb-postly-auth', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' }
+    });
+  </script>
 </head>
 <body>
 

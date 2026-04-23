@@ -428,7 +428,12 @@
 
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-session.js"></script>
+  <script>
+    const { createClient } = supabase;
+    window.supabaseClient = createClient('https://rgaftjkxcjxudobfiyyo.supabase.co', 'sb_publishable_EUPSbTeVs3WHYJZ8E2IF2A_NqYsqtiY', {
+      auth: { storage: window.localStorage, storageKey: 'sb-postly-auth', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' }
+    });
+  </script>
 </head>
 <body>
 
@@ -591,17 +596,13 @@
 
   // SUPABASE DASHBOARD
   window.addEventListener('DOMContentLoaded', async () => {
-    await new Promise(r => setTimeout(r, 300)); // wait for supabase-session.js
-    const supabase = window.supabaseClient;
-    if (!supabase) { window.location.href = 'auth.html'; return; }
-
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'auth.html'; return; }
 
     const userId = session.user.id;
 
     // Profile
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseClient
       .from('profiles').select('full_name').eq('id', userId).single();
     if (profile?.full_name) {
       const firstName = profile.full_name.split(' ')[0];
@@ -609,7 +610,7 @@
     }
 
     // Subscription
-    const { data: sub } = await supabase
+    const { data: sub } = await supabaseClient
       .from('subscriptions')
       .select('plan, generations_used, generations_limit, reset_date')
       .eq('user_id', userId).single();
@@ -642,7 +643,7 @@
         const banner = document.querySelector('.upgrade-banner');
         if (banner) banner.style.display = 'none';
         document.querySelector('.history-locked').style.display = 'none';
-        loadHistory(supabase, userId);
+        loadHistory(supabaseClient, userId);
       }
     }
   });
