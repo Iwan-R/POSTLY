@@ -55,9 +55,9 @@
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 40px;
+    padding: 18px 48px;
     backdrop-filter: blur(24px);
-    background: rgba(7,6,15,0.8);
+    background: rgba(7,6,15,0.85);
     border-bottom: 1px solid var(--border);
   }
 
@@ -328,7 +328,7 @@
 
 <nav>
   <a href="index.html" class="logo">Postly</a>
-  <a href="index.html" class="nav-back">← Retour</a>
+  <a href="index.html" style="color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;transition:color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">← Retour</a>
 </nav>
 
 <main>
