@@ -321,6 +321,8 @@
   }
 
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-session.js"></script>
 </head>
 <body>
 
@@ -491,7 +493,7 @@
     banner.classList.add('visible');
   }
 
-  function handleLogin() {
+  async function handleLogin() {
     clearErrors();
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
@@ -516,16 +518,21 @@
     btn.classList.add('loading');
     btn.textContent = 'Connexion...';
 
-    // Simulate — à remplacer par Supabase auth
-    setTimeout(() => {
+    const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (error) {
       btn.disabled = false;
       btn.classList.remove('loading');
       btn.textContent = 'Se connecter';
-      window.location.href = 'generator.html';
-    }, 1500);
+      document.getElementById('loginEmail').classList.add('error');
+      showError('loginEmailError', 'Email ou mot de passe incorrect.');
+      return;
+    }
+
+    window.location.href = 'generator.html';
   }
 
-  function handleSignup() {
+  async function handleSignup() {
     clearErrors();
     const name = document.getElementById('signupName').value.trim();
     const email = document.getElementById('signupEmail').value.trim();
@@ -557,18 +564,30 @@
     btn.classList.add('loading');
     btn.textContent = 'Création du compte...';
 
-    // Simulate — à remplacer par Supabase auth
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.classList.remove('loading');
-      btn.textContent = 'Créer mon compte';
-      showSuccess('✓ Compte créé ! Vérifie ton email pour confirmer.');
-    }, 1500);
+    const { data, error } = await window.supabaseClient.auth.signUp({
+      email,
+      password,
+      options: { data: { first_name: name } }
+    });
+
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.textContent = 'Créer mon compte';
+
+    if (error) {
+      showError('signupEmailError', error.message);
+      document.getElementById('signupEmail').classList.add('error');
+      return;
+    }
+
+    showSuccess('✓ Compte créé ! Vérifie ton email pour confirmer puis connecte-toi.');
   }
 
-  function handleGoogle() {
-    // À remplacer par Supabase Google OAuth
-    alert('Google OAuth — à brancher avec Supabase.');
+  async function handleGoogle() {
+    await window.supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/generator.html' }
+    });
   }
 
   // Enter key support
