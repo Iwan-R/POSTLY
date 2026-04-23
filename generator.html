@@ -545,6 +545,8 @@
   }
 
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-session.js"></script>
 </head>
 <body>
 
@@ -860,9 +862,9 @@
   }
 
   async function generate() {
-    // AUTH CHECK — remplacer par vérification Supabase session
-    const isLoggedIn = false;
-    if (!isLoggedIn) {
+    // AUTH CHECK — Supabase session
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (!session) {
       window.location.href = 'auth.html';
       return;
     }
