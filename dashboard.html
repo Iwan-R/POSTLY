@@ -427,6 +427,8 @@
   }
 
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-session.js"></script>
 </head>
 <body>
 
@@ -586,6 +588,81 @@
       menu.classList.remove('open');
     }
   });
+
+  // SUPABASE DASHBOARD
+  window.addEventListener('DOMContentLoaded', async () => {
+    await new Promise(r => setTimeout(r, 300)); // wait for supabase-session.js
+    const supabase = window.supabaseClient;
+    if (!supabase) { window.location.href = 'auth.html'; return; }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = 'auth.html'; return; }
+
+    const userId = session.user.id;
+
+    // Profile
+    const { data: profile } = await supabase
+      .from('profiles').select('full_name').eq('id', userId).single();
+    if (profile?.full_name) {
+      const firstName = profile.full_name.split(' ')[0];
+      document.querySelector('.greeting-left h1').innerHTML = 'Bonjour, <em>' + firstName + '</em> 👋';
+    }
+
+    // Subscription
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan, generations_used, generations_limit, reset_date')
+      .eq('user_id', userId).single();
+
+    if (sub) {
+      const isPro = sub.plan === 'pro' || sub.plan === 'premium';
+      const planBadge = document.querySelector('.plan-badge');
+      if (sub.plan === 'pro') {
+        planBadge.className = 'plan-badge plan-pro';
+        planBadge.textContent = '⚡ Plan Pro';
+      } else if (sub.plan === 'premium') {
+        planBadge.className = 'plan-badge plan-premium';
+        planBadge.textContent = '👑 Plan Premium';
+      }
+
+      const used = sub.generations_used || 0;
+      const limit = sub.generations_limit || 10;
+      document.querySelector('.stat-value').textContent = used;
+      document.querySelector('.quota-count').innerHTML = isPro
+        ? '<strong>Illimité</strong>'
+        : '<strong>' + used + '</strong> / ' + limit + ' ce mois';
+      document.querySelector('.progress-fill').style.width = (isPro ? 5 : Math.min((used/limit)*100, 100)) + '%';
+
+      if (sub.reset_date) {
+        const d = new Date(sub.reset_date);
+        document.querySelector('.quota-sub span').textContent = 'Se réinitialise le ' + d.toLocaleDateString('fr-FR', {day:'numeric',month:'long'});
+      }
+
+      if (isPro) {
+        const banner = document.querySelector('.upgrade-banner');
+        if (banner) banner.style.display = 'none';
+        document.querySelector('.history-locked').style.display = 'none';
+        loadHistory(supabase, userId);
+      }
+    }
+  });
+
+  async function loadHistory(supabase, userId) {
+    const { data: gens } = await supabase
+      .from('generations').select('hook, created_at')
+      .eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
+    if (!gens || !gens.length) return;
+    const container = document.querySelector('.history-section');
+    const list = document.createElement('div');
+    list.className = 'history-list';
+    gens.forEach(gen => {
+      const d = new Date(gen.created_at);
+      const dateStr = d.toLocaleDateString('fr-FR', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      list.innerHTML += '<a href="generator.html" class="history-item"><div class="history-platform platform-tiktok">🎵</div><div class="history-info"><div class="history-niche">' + (gen.hook || 'Génération') + '</div><div class="history-meta"><span>' + dateStr + '</span></div></div><div class="history-arrow">›</div></a>';
+    });
+    container.appendChild(list);
+  }
+
 </script>
 
 </body>
