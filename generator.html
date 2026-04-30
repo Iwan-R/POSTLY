@@ -962,50 +962,52 @@ Génère 20-25 hashtags viraux ultra-pertinents pour "${niche}" sur ${selectedPl
 IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être applicable immédiatement. Le script doit être assez long pour la durée demandée.`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      // Get user session
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      if (!session) { window.location.href = 'auth.html'; return; }
+
+      const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 4000,
-          stream: true,
-          messages: [{ role: "user", content: prompt }]
+          niche: niche,
+          platform: selectedPlatform,
+          duration: selectedDuration,
+          userId: session.user.id
         })
       });
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-      let currentSection = null;
-      let buffer = '';
-      let stepDone = { concept: false, hook: false, desc: false, setup: false, points: false, script: false };
-
-      setStep(1);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6);
-          if (data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-              fullText += parsed.delta.text;
-              buffer += parsed.delta.text;
-              renderStreaming(fullText, buffer, stepDone);
-            }
-          } catch(e) {}
-        }
+      if (!response.ok) {
+        throw new Error('Erreur API');
       }
 
-      // Final render
-      finalRender(fullText);
+      const result = await response.json();
+
+      // Render all sections
+      setStep(2);
+      document.getElementById('concept-content').textContent = result.concept || '';
+      document.getElementById('concept-content').classList.remove('streaming');
+
+      setStep(3);
+      document.getElementById('hook-content').textContent = result.hooks || '';
+      document.getElementById('hook-content').classList.remove('streaming');
+
+      document.getElementById('desc-content').textContent = result.description || '';
+      document.getElementById('desc-content').classList.remove('streaming');
+
+      setStep(4);
+      if (result.setup) parseAndRenderSetup(result.setup);
+
+      if (result.points) parseAndRenderPoints(result.points);
+
+      setStep(5);
+      document.getElementById('script-content').textContent = result.script || '';
+      document.getElementById('script-content').classList.remove('streaming');
+
+      setStep(6);
+      if (result.hashtags) parseAndRenderHashtags(result.hashtags);
+
+      const fullText = JSON.stringify(result);
 
     } catch(err) {
       console.error(err);

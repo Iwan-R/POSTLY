@@ -1,12 +1,11 @@
-// Vercel Serverless Function pour générer du contenu via OpenAI
-// Cette fonction vérifie l'authentification et appelle OpenAI de manière sécurisée
+// Vercel Serverless Function - Postly Generator
+// Utilise OpenAI GPT-4 pour générer du contenu viral complet
 
 export const config = {
   runtime: 'edge',
 };
 
 export default async function handler(req) {
-  // Vérifier la méthode
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -15,61 +14,73 @@ export default async function handler(req) {
   }
 
   try {
-    // Récupérer les données de la requête
-    const { theme, tone, platform, format, userId } = await req.json();
+    const { niche, platform, duration, userId } = await req.json();
 
-    // Vérifier que tous les paramètres sont présents
-    if (!theme || !tone || !platform || !format || !userId) {
+    if (!niche || !platform || !duration || !userId) {
       return new Response(JSON.stringify({ error: 'Missing parameters' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Construire le prompt
-    const formatText = format === 'video' ? 'vidéo' : 'carrousel de photos';
-    const platformText = platform === 'tiktok' ? 'TikTok' : 'Instagram';
-    
-    const prompt = `Tu es un expert en création de contenu VIRAL pour ${platformText}. Ta mission : créer du contenu ULTRA-CONCRET et ACTIONNABLE.
+    const prompt = `Tu es Postly, l'IA de création de contenu viral #1 pour TikTok et Instagram. Tu dois générer un contenu COMPLET et ULTRA-OPTIMISÉ pour l'algorithme.
 
-THÈME : ${theme}
-TON : ${tone}
-FORMAT : ${formatText}
-PLATEFORME : ${platformText}
+NICHE & SUJET : ${niche}
+PLATEFORME : ${platform}
+DURÉE : ${duration}
 
-RÈGLES ABSOLUES :
-1. Donne des NOMS PRÉCIS (applications, marques, techniques, personnes)
-2. Donne des CHIFFRES CONCRETS (pourcentages, prix, statistiques)
-3. Sois ULTRA-SPÉCIFIQUE - pas de généralités
-4. Le créateur doit pouvoir filmer IMMÉDIATEMENT après avoir lu
+Génère EXACTEMENT dans cet ordre, avec ces balises EXACTES :
 
-STRUCTURE OBLIGATOIRE :
+[CONCEPT]
+L'idée principale et l'angle unique de la vidéo. Explique pourquoi cet angle va performer sur ${platform}. Sois précis sur la valeur apportée à l'audience. (3-4 phrases)
+[/CONCEPT]
 
-HOOK:
-[UNE SEULE phrase de 5-8 mots MAXIMUM - ultra percutante, qui crée le choc ou la curiosité]
+[HOOKS]
+Génère 3 hooks différents ultra-percutants pour la PREMIÈRE SECONDE. Chaque hook doit être différent dans son approche (curiosité / choc / provocation). Pour chaque hook, explique en une phrase pourquoi il est efficace. Format :
+Hook 1 : "..."
+Pourquoi : ...
+Hook 2 : "..."
+Pourquoi : ...
+Hook 3 : "..."
+Pourquoi : ...
+Recommandation : Hook X car ...
+[/HOOKS]
 
-IDÉE:
-[2 phrases MAX - l'idée du contenu de façon claire et engageante]
+[DESCRIPTION]
+UNE SEULE phrase maximum pour la description sous la vidéo sur ${platform}. Elle doit être courte, percutante, avec 1 ou 2 emojis maximum, donner envie de regarder ou de commenter. Pas de hashtags ici, juste la phrase.
+[/DESCRIPTION]
 
-ARGUMENTS:
-[3 points clés CONCRETS avec des exemples précis, des chiffres, des noms]
+[SETUP]
+Donne exactement ces informations sur chaque ligne avec le format "Titre: valeur" :
+Position caméra: (hauteur, angle, distance exacte)
+Lumière: (source, position, heure idéale si lumière naturelle)
+Décor: (fond idéal, ce qu'on doit/ne doit pas voir)
+Orientation: (vertical 9:16, etc.)
+Tenue: (conseils vestimentaires pour cette niche)
+Son: (micro intégré ou externe, conseils)
+[/SETUP]
 
-DESCRIPTION:
-[Description engageante pour le post avec émojis stratégiques]
+[POINTS]
+Liste tous les points ESSENTIELS abordés dans la vidéo. Entre 5 et 10 points selon la durée. Format : une ligne par point, commence par "- ". Ce sont les grandes étapes du contenu que le créateur doit mémoriser AVANT de lire le script.
+[/POINTS]
 
-HASHTAGS:
-[10-15 hashtags pertinents pour maximiser la portée - SANS #pourtoi car on l'ajoute automatiquement]
+[SCRIPT]
+Le script COMPLET et DÉTAILLÉ, mot pour mot, de A à Z. Adapté exactement à la durée ${duration}.
+Format du script :
+- [HOOK - 0:00] texte exact
+- [PARTIE 1 - 0:05] texte exact avec indications de rythme en parenthèses (pause, accélère, insiste, regarde caméra, etc.)
+- Continue ainsi pour TOUTE la vidéo
+- [CTA FINAL - fin] texte exact du call-to-action
 
-IMPORTANT : Réponds UNIQUEMENT en JSON avec cette structure exacte :
-{
-  "hook": "...",
-  "idea": "...",
-  "arguments": ["...", "...", "..."],
-  "description": "...",
-  "hashtags": "..."
-}`;
+Le script doit être COMPLET, ne raccourcis pas. Pour un long format, écris vraiment tout.
+[/SCRIPT]
 
-    // Appeler OpenAI
+[HASHTAGS]
+Génère 20-25 hashtags viraux ultra-pertinents pour "${niche}" sur ${platform}. Mélange : 5 hashtags très populaires (>1M posts), 10 hashtags moyens (100K-1M), 5-10 hashtags de niche précis (<100K). Format : #hashtag séparés par des espaces.
+[/HASHTAGS]
+
+IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être applicable immédiatement.`;
+
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -81,15 +92,15 @@ IMPORTANT : Réponds UNIQUEMENT en JSON avec cette structure exacte :
         messages: [
           {
             role: 'system',
-            content: 'Tu es un expert en création de contenu viral pour les réseaux sociaux. Tu réponds TOUJOURS en JSON valide, JAMAIS avec du texte avant ou après. TOUJOURS donner des exemples CONCRETS avec des NOMS PRÉCIS, des CHIFFRES, des MARQUES. JAMAIS de généralités. TOUJOURS être ULTRA-SPÉCIFIQUE et ACTIONNABLE.'
+            content: 'Tu es Postly, une IA experte en création de contenu viral pour TikTok et Instagram. Tu génères des contenus COMPLETS, PRÉCIS et ACTIONNABLES. Tu respectes TOUJOURS exactement le format demandé avec les balises. Tu ne raccourcis jamais les scripts.',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
-        temperature: 0.9,
-        max_tokens: 1200,
+        temperature: 0.85,
+        max_tokens: 4000,
       }),
     });
 
@@ -100,29 +111,34 @@ IMPORTANT : Réponds UNIQUEMENT en JSON avec cette structure exacte :
     }
 
     const data = await openaiResponse.json();
-    const content = data.choices[0].message.content;
+    const fullText = data.choices[0].message.content;
 
-    // Parser le JSON (enlever les backticks markdown si présents)
-    let cleanContent = content.trim();
-    if (cleanContent.startsWith('```json')) {
-      cleanContent = cleanContent.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-    } else if (cleanContent.startsWith('```')) {
-      cleanContent = cleanContent.replace(/```\n?/g, '');
+    function extractSection(text, tag) {
+      const regex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`);
+      const match = text.match(regex);
+      return match ? match[1].trim() : '';
     }
 
-    const parsedContent = JSON.parse(cleanContent);
+    const result = {
+      concept: extractSection(fullText, 'CONCEPT'),
+      hooks: extractSection(fullText, 'HOOKS'),
+      description: extractSection(fullText, 'DESCRIPTION'),
+      setup: extractSection(fullText, 'SETUP'),
+      points: extractSection(fullText, 'POINTS'),
+      script: extractSection(fullText, 'SCRIPT'),
+      hashtags: extractSection(fullText, 'HASHTAGS'),
+    };
 
-    // Retourner le résultat
-    return new Response(JSON.stringify(parsedContent), {
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Function Error:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Internal server error',
-      message: error.message 
+      message: error.message,
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
