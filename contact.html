@@ -566,5 +566,24 @@
   }
 </script>
 
+<script>
+  // NAV AUTH CHECK
+  window.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const supabase = window.supabaseClient;
+      if (!supabase) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      const navCta = document.querySelector('nav .nav-cta');
+      if (!navCta) return;
+      if (session) {
+        navCta.textContent = 'Mon compte';
+        navCta.href = 'dashboard.html';
+      } else {
+        navCta.textContent = 'Connexion';
+        navCta.href = 'auth.html';
+      }
+    } catch(e) {}
+  });
+</script>
 </body>
 </html>
