@@ -977,11 +977,19 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
         })
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
+        if (result.error === 'limit_reached') {
+          btn.disabled = false;
+          btn.classList.remove('loading');
+          btn.textContent = '✨ Générer mon contenu viral';
+          document.getElementById('progressWrap').style.display = 'none';
+          alert('🔒 Tu as atteint ta limite de 10 générations ce mois.\n\nPasse au Plan Pro pour générer sans limite → postly.agency/#pricing');
+          return;
+        }
         throw new Error('Erreur API');
       }
-
-      const result = await response.json();
 
       // Render all sections
       setStep(2);

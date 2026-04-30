@@ -1,5 +1,5 @@
 // Vercel Serverless Function - Postly Generator
-// Utilise OpenAI GPT-4 pour générer du contenu viral complet
+// Vérifie le plan, limite les générations, appelle OpenAI
 
 export const config = {
   runtime: 'edge',
@@ -23,27 +23,65 @@ export default async function handler(req) {
       });
     }
 
+    const SUPABASE_URL = 'https://rgaftjkxcjxudobfiyyo.supabase.co';
+    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+    // Vérifier le plan et les générations restantes
+    const subRes = await fetch(`${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}&select=plan,generations_used,generations_limit`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const subData = await subRes.json();
+    const sub = subData[0];
+
+    if (!sub) {
+      return new Response(JSON.stringify({ error: 'Subscription not found' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const isPro = sub.plan === 'pro' || sub.plan === 'premium';
+    const generationsUsed = sub.generations_used || 0;
+    const generationsLimit = sub.generations_limit || 10;
+
+    // Bloquer si plan gratuit et limite atteinte
+    if (!isPro && generationsUsed >= generationsLimit) {
+      return new Response(JSON.stringify({ 
+        error: 'limit_reached',
+        message: 'Tu as atteint ta limite de 10 générations ce mois. Passe au Pro pour générer sans limite.',
+        used: generationsUsed,
+        limit: generationsLimit,
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Générer le contenu avec OpenAI
     const prompt = `Tu es Postly, l'IA de création de contenu viral #1 pour TikTok et Instagram.
 
 NICHE & SUJET : ${niche}
 PLATEFORME : ${platform}
 DURÉE : ${duration}
 
-RÈGLES ABSOLUES — tu dois les respecter dans CHAQUE section :
+RÈGLES ABSOLUES :
 1. JAMAIS de généralités. TOUJOURS des noms précis (apps, marques, personnes, lieux)
 2. TOUJOURS des chiffres concrets (€, %, durées, quantités)
 3. Si tu parles d'une application → donne son vrai nom
 4. Si tu parles d'une technique → donne les étapes exactes
 5. Le créateur doit pouvoir filmer IMMÉDIATEMENT sans chercher quoi que ce soit
 
-Génère dans cet ordre exact avec ces balises :
-
 [CONCEPT]
-L'idée précise et l'angle unique. Dis EXACTEMENT de quoi parle la vidéo, avec des éléments spécifiques (noms, chiffres, exemples). Pourquoi cet angle va performer sur ${platform}. (3-4 phrases ultra-concrètes)
+L'idée précise et l'angle unique. Dis EXACTEMENT de quoi parle la vidéo, avec des éléments spécifiques. Pourquoi cet angle va performer sur ${platform}. (3-4 phrases ultra-concrètes)
 [/CONCEPT]
 
 [HOOKS]
-3 hooks ultra-percutants pour la PREMIÈRE SECONDE. Chaque hook doit mentionner quelque chose de PRÉCIS (un chiffre, un nom, un résultat concret). Format :
+3 hooks ultra-percutants pour la PREMIÈRE SECONDE. Chaque hook doit mentionner quelque chose de PRÉCIS. Format :
 Hook 1 : "..."
 Pourquoi : ...
 Hook 2 : "..."
@@ -54,11 +92,11 @@ Recommandation : Hook X car ...
 [/HOOKS]
 
 [DESCRIPTION]
-UNE seule phrase percutante pour la description du post. Avec 1-2 emojis. Pas de hashtags. Doit mentionner quelque chose de concret et spécifique.
+UNE seule phrase percutante pour la description du post. Avec 1-2 emojis. Pas de hashtags. Concrète et spécifique.
 [/DESCRIPTION]
 
 [SETUP]
-Position caméra: hauteur exacte, angle, distance en cm/m
+Position caméra: hauteur exacte, angle, distance
 Lumière: source précise, position, heure recommandée
 Décor: description précise du fond idéal
 Orientation: vertical 9:16
@@ -67,20 +105,19 @@ Son: type de micro recommandé, conseils précis
 [/SETUP]
 
 [POINTS]
-Entre 5 et 10 points clés CONCRETS avec des détails précis pour chaque point. Chaque point doit être actionnable immédiatement. Format : "- Point concret avec détail précis"
+5 à 10 points clés CONCRETS avec détails précis. Format : "- Point concret avec détail précis"
 [/POINTS]
 
 [SCRIPT]
-Script COMPLET mot pour mot adapté à ${duration}. RÈGLE : chaque partie doit mentionner des éléments PRÉCIS et CONCRETS. Jamais de "une application" ou "une technique" — toujours le vrai nom.
-Format :
-- [HOOK - 0:00] texte exact avec timecode
-- [PARTIE 1 - 0:05] texte exact (indication de rythme) 
+Script COMPLET mot pour mot adapté à ${duration}. Chaque partie mentionne des éléments PRÉCIS. Jamais de "une application" — toujours le vrai nom.
+- [HOOK - 0:00] texte exact
+- [PARTIE 1 - 0:05] texte exact (indication rythme)
 - Continue pour TOUTE la durée
 - [CTA FINAL - fin] call-to-action précis
 [/SCRIPT]
 
 [HASHTAGS]
-20-25 hashtags adaptés exactement à "${niche}" sur ${platform}. Mix : 5 très populaires, 10 moyens, 5-10 niche. Format : #hashtag séparés par espaces.
+20-25 hashtags pour "${niche}" sur ${platform}. Mix populaires + moyens + niche. Format : #hashtag séparés par espaces.
 [/HASHTAGS]`;
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -94,18 +131,9 @@ Format :
         messages: [
           {
             role: 'system',
-            content: `Tu es Postly, une IA experte en création de contenu viral. 
-RÈGLES ABSOLUES :
-- JAMAIS de termes vagues comme "une application", "un outil", "une technique"
-- TOUJOURS des noms précis : Notion, Instagram, BeReal, Airbnb, etc.
-- TOUJOURS des chiffres réels : "47%", "200€", "3 minutes", "10 000 vues"
-- Le script doit être complet et détaillé, jamais raccourci
-- Chaque conseil doit être applicable immédiatement sans chercher`,
+            content: 'Tu es Postly, une IA experte en création de contenu viral. JAMAIS de termes vagues. TOUJOURS des noms précis, des chiffres réels. Le script doit être complet et détaillé.',
           },
-          {
-            role: 'user',
-            content: prompt,
-          },
+          { role: 'user', content: prompt },
         ],
         temperature: 0.8,
         max_tokens: 4000,
@@ -113,8 +141,6 @@ RÈGLES ABSOLUES :
     });
 
     if (!openaiResponse.ok) {
-      const errorData = await openaiResponse.text();
-      console.error('OpenAI Error:', errorData);
       throw new Error('OpenAI API error');
     }
 
@@ -136,6 +162,36 @@ RÈGLES ABSOLUES :
       script: extractSection(fullText, 'SCRIPT'),
       hashtags: extractSection(fullText, 'HASHTAGS'),
     };
+
+    // Incrémenter generations_used dans Supabase
+    await fetch(`${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({ generations_used: generationsUsed + 1 }),
+    });
+
+    // Sauvegarder la génération dans la table generations
+    await fetch(`${SUPABASE_URL}/rest/v1/generations`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        hook: result.hooks.split('\n')[0].replace('Hook 1 : ', '').replace(/"/g, ''),
+        platform: platform,
+        duration: duration,
+        niche: niche,
+      }),
+    });
 
     return new Response(JSON.stringify(result), {
       status: 200,
