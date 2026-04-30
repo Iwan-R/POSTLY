@@ -23,20 +23,27 @@ export default async function handler(req) {
       });
     }
 
-    const prompt = `Tu es Postly, l'IA de création de contenu viral #1 pour TikTok et Instagram. Tu dois générer un contenu COMPLET et ULTRA-OPTIMISÉ pour l'algorithme.
+    const prompt = `Tu es Postly, l'IA de création de contenu viral #1 pour TikTok et Instagram.
 
 NICHE & SUJET : ${niche}
 PLATEFORME : ${platform}
 DURÉE : ${duration}
 
-Génère EXACTEMENT dans cet ordre, avec ces balises EXACTES :
+RÈGLES ABSOLUES — tu dois les respecter dans CHAQUE section :
+1. JAMAIS de généralités. TOUJOURS des noms précis (apps, marques, personnes, lieux)
+2. TOUJOURS des chiffres concrets (€, %, durées, quantités)
+3. Si tu parles d'une application → donne son vrai nom
+4. Si tu parles d'une technique → donne les étapes exactes
+5. Le créateur doit pouvoir filmer IMMÉDIATEMENT sans chercher quoi que ce soit
+
+Génère dans cet ordre exact avec ces balises :
 
 [CONCEPT]
-L'idée principale et l'angle unique de la vidéo. Explique pourquoi cet angle va performer sur ${platform}. Sois précis sur la valeur apportée à l'audience. (3-4 phrases)
+L'idée précise et l'angle unique. Dis EXACTEMENT de quoi parle la vidéo, avec des éléments spécifiques (noms, chiffres, exemples). Pourquoi cet angle va performer sur ${platform}. (3-4 phrases ultra-concrètes)
 [/CONCEPT]
 
 [HOOKS]
-Génère 3 hooks différents ultra-percutants pour la PREMIÈRE SECONDE. Chaque hook doit être différent dans son approche (curiosité / choc / provocation). Pour chaque hook, explique en une phrase pourquoi il est efficace. Format :
+3 hooks ultra-percutants pour la PREMIÈRE SECONDE. Chaque hook doit mentionner quelque chose de PRÉCIS (un chiffre, un nom, un résultat concret). Format :
 Hook 1 : "..."
 Pourquoi : ...
 Hook 2 : "..."
@@ -47,39 +54,34 @@ Recommandation : Hook X car ...
 [/HOOKS]
 
 [DESCRIPTION]
-UNE SEULE phrase maximum pour la description sous la vidéo sur ${platform}. Elle doit être courte, percutante, avec 1 ou 2 emojis maximum, donner envie de regarder ou de commenter. Pas de hashtags ici, juste la phrase.
+UNE seule phrase percutante pour la description du post. Avec 1-2 emojis. Pas de hashtags. Doit mentionner quelque chose de concret et spécifique.
 [/DESCRIPTION]
 
 [SETUP]
-Donne exactement ces informations sur chaque ligne avec le format "Titre: valeur" :
-Position caméra: (hauteur, angle, distance exacte)
-Lumière: (source, position, heure idéale si lumière naturelle)
-Décor: (fond idéal, ce qu'on doit/ne doit pas voir)
-Orientation: (vertical 9:16, etc.)
-Tenue: (conseils vestimentaires pour cette niche)
-Son: (micro intégré ou externe, conseils)
+Position caméra: hauteur exacte, angle, distance en cm/m
+Lumière: source précise, position, heure recommandée
+Décor: description précise du fond idéal
+Orientation: vertical 9:16
+Tenue: conseils vestimentaires adaptés à la niche
+Son: type de micro recommandé, conseils précis
 [/SETUP]
 
 [POINTS]
-Liste tous les points ESSENTIELS abordés dans la vidéo. Entre 5 et 10 points selon la durée. Format : une ligne par point, commence par "- ". Ce sont les grandes étapes du contenu que le créateur doit mémoriser AVANT de lire le script.
+Entre 5 et 10 points clés CONCRETS avec des détails précis pour chaque point. Chaque point doit être actionnable immédiatement. Format : "- Point concret avec détail précis"
 [/POINTS]
 
 [SCRIPT]
-Le script COMPLET et DÉTAILLÉ, mot pour mot, de A à Z. Adapté exactement à la durée ${duration}.
-Format du script :
-- [HOOK - 0:00] texte exact
-- [PARTIE 1 - 0:05] texte exact avec indications de rythme en parenthèses (pause, accélère, insiste, regarde caméra, etc.)
-- Continue ainsi pour TOUTE la vidéo
-- [CTA FINAL - fin] texte exact du call-to-action
-
-Le script doit être COMPLET, ne raccourcis pas. Pour un long format, écris vraiment tout.
+Script COMPLET mot pour mot adapté à ${duration}. RÈGLE : chaque partie doit mentionner des éléments PRÉCIS et CONCRETS. Jamais de "une application" ou "une technique" — toujours le vrai nom.
+Format :
+- [HOOK - 0:00] texte exact avec timecode
+- [PARTIE 1 - 0:05] texte exact (indication de rythme) 
+- Continue pour TOUTE la durée
+- [CTA FINAL - fin] call-to-action précis
 [/SCRIPT]
 
 [HASHTAGS]
-Génère 20-25 hashtags viraux ultra-pertinents pour "${niche}" sur ${platform}. Mélange : 5 hashtags très populaires (>1M posts), 10 hashtags moyens (100K-1M), 5-10 hashtags de niche précis (<100K). Format : #hashtag séparés par des espaces.
-[/HASHTAGS]
-
-IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être applicable immédiatement.`;
+20-25 hashtags adaptés exactement à "${niche}" sur ${platform}. Mix : 5 très populaires, 10 moyens, 5-10 niche. Format : #hashtag séparés par espaces.
+[/HASHTAGS]`;
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -92,14 +94,20 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
         messages: [
           {
             role: 'system',
-            content: 'Tu es Postly, une IA experte en création de contenu viral pour TikTok et Instagram. Tu génères des contenus COMPLETS, PRÉCIS et ACTIONNABLES. Tu respectes TOUJOURS exactement le format demandé avec les balises. Tu ne raccourcis jamais les scripts.',
+            content: `Tu es Postly, une IA experte en création de contenu viral. 
+RÈGLES ABSOLUES :
+- JAMAIS de termes vagues comme "une application", "un outil", "une technique"
+- TOUJOURS des noms précis : Notion, Instagram, BeReal, Airbnb, etc.
+- TOUJOURS des chiffres réels : "47%", "200€", "3 minutes", "10 000 vues"
+- Le script doit être complet et détaillé, jamais raccourci
+- Chaque conseil doit être applicable immédiatement sans chercher`,
           },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.85,
+        temperature: 0.8,
         max_tokens: 4000,
       }),
     });
