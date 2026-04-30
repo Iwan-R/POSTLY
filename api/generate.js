@@ -1,6 +1,3 @@
-// Vercel Serverless Function - Postly Generator
-// Vérifie le plan, limite les générations, appelle OpenAI
-
 export const config = {
   runtime: 'edge',
 };
@@ -16,53 +13,13 @@ export default async function handler(req) {
   try {
     const { niche, platform, duration, userId } = await req.json();
 
-    if (!niche || !platform || !duration || !userId) {
+    if (!niche || !platform || !duration) {
       return new Response(JSON.stringify({ error: 'Missing parameters' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const SUPABASE_URL = 'https://rgaftjkxcjxudobfiyyo.supabase.co';
-    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-
-    // Vérifier le plan et les générations restantes
-    const subRes = await fetch(`${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}&select=plan,generations_used,generations_limit`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const subData = await subRes.json();
-    const sub = subData[0];
-
-    if (!sub) {
-      return new Response(JSON.stringify({ error: 'Subscription not found' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const isPro = sub.plan === 'pro' || sub.plan === 'premium';
-    const generationsUsed = sub.generations_used || 0;
-    const generationsLimit = sub.generations_limit || 10;
-
-    // Bloquer si plan gratuit et limite atteinte
-    if (!isPro && generationsUsed >= generationsLimit) {
-      return new Response(JSON.stringify({ 
-        error: 'limit_reached',
-        message: 'Tu as atteint ta limite de 10 générations ce mois. Passe au Pro pour générer sans limite.',
-        used: generationsUsed,
-        limit: generationsLimit,
-      }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Générer le contenu avec OpenAI
     const prompt = `Tu es Postly, l'IA de création de contenu viral #1 pour TikTok et Instagram.
 
 NICHE & SUJET : ${niche}
@@ -141,6 +98,8 @@ Script COMPLET mot pour mot adapté à ${duration}. Chaque partie mentionne des 
     });
 
     if (!openaiResponse.ok) {
+      const err = await openaiResponse.text();
+      console.error('OpenAI error:', err);
       throw new Error('OpenAI API error');
     }
 
@@ -163,43 +122,13 @@ Script COMPLET mot pour mot adapté à ${duration}. Chaque partie mentionne des 
       hashtags: extractSection(fullText, 'HASHTAGS'),
     };
 
-    // Incrémenter generations_used dans Supabase
-    await fetch(`${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({ generations_used: generationsUsed + 1 }),
-    });
-
-    // Sauvegarder la génération dans la table generations
-    await fetch(`${SUPABASE_URL}/rest/v1/generations`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        hook: result.hooks.split('\n')[0].replace('Hook 1 : ', '').replace(/"/g, ''),
-        platform: platform,
-        duration: duration,
-        niche: niche,
-      }),
-    });
-
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Function Error:', error);
+    console.error('Error:', error);
     return new Response(JSON.stringify({
       error: 'Internal server error',
       message: error.message,
