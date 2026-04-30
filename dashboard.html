@@ -598,7 +598,6 @@
   window.addEventListener('DOMContentLoaded', async () => {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'auth.html'; return; }
-
     const userId = session.user.id;
 
     // Profile
@@ -642,14 +641,15 @@
       if (isPro) {
         const banner = document.querySelector('.upgrade-banner');
         if (banner) banner.style.display = 'none';
-        document.querySelector('.history-locked').style.display = 'none';
-        loadHistory(supabaseClient, userId);
+        const locked = document.querySelector('.history-locked');
+        if (locked) locked.style.display = 'none';
+        loadHistory(userId);
       }
     }
   });
 
-  async function loadHistory(supabase, userId) {
-    const { data: gens } = await supabase
+    async function loadHistory(userId) {
+    const { data: gens } = await supabaseClient
       .from('generations').select('hook, created_at')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
     if (!gens || !gens.length) return;
