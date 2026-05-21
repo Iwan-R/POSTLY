@@ -620,12 +620,42 @@
     if (!session) { window.location.href = 'auth.html'; return; }
     const userId = session.user.id;
 
-    // Profile
+    // Profile - récupérer le prénom avec plusieurs fallbacks
     const { data: profile } = await supabaseClient
       .from('profiles').select('full_name').eq('id', userId).single();
+
+    let firstName = null;
+
+    // 1. Essayer depuis la table profiles
     if (profile?.full_name) {
-      const firstName = profile.full_name.split(' ')[0];
+      firstName = profile.full_name.split(' ')[0];
+    }
+    // 2. Essayer depuis les metadata Supabase (first_name stocké à l'inscription)
+    else if (session.user.user_metadata?.first_name) {
+      firstName = session.user.user_metadata.first_name;
+    }
+    // 3. Essayer depuis full_name dans metadata (au cas où)
+    else if (session.user.user_metadata?.full_name) {
+      firstName = session.user.user_metadata.full_name.split(' ')[0];
+    }
+    // 4. Fallback : prendre la partie avant @ de l'email, mais bien formatée
+    else if (session.user.email) {
+      const emailPart = session.user.email.split('@')[0].replace(/[._-]/g, ' ').split(' ')[0];
+      firstName = emailPart.charAt(0).toUpperCase() + emailPart.slice(1).toLowerCase();
+    }
+
+    if (firstName) {
       document.querySelector('.greeting-left h1').innerHTML = 'Bonjour, <em>' + firstName + '</em> 👋';
+
+      // Si le profil n'a pas de full_name, on l'enregistre pour les prochaines fois
+      if (!profile?.full_name && firstName) {
+        try {
+          await supabaseClient.from('profiles').upsert({
+            id: userId,
+            full_name: firstName
+          }, { onConflict: 'id' });
+        } catch(e) { console.log('Profile update error:', e); }
+      }
     }
 
     // Subscription
