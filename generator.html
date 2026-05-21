@@ -1070,9 +1070,16 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
   }
 
   function extractSection(text, tag) {
-    const regex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?:\\[\\/${tag}\\]|$)`);
-    const match = text.match(regex);
-    return match ? match[1].trim() : null;
+    // Cherche le contenu entre [TAG] et [/TAG]
+    const closedRegex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`);
+    const closedMatch = text.match(closedRegex);
+    if (closedMatch) return closedMatch[1].trim();
+
+    // Pendant le streaming : section pas encore fermée
+    // On extrait entre [TAG] et le prochain [ (qui marque une autre section)
+    const openRegex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?=\\[|$)`);
+    const openMatch = text.match(openRegex);
+    return openMatch ? openMatch[1].trim() : null;
   }
 
   function renderStreaming(fullText, buffer, stepDone) {
