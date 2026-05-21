@@ -1156,21 +1156,21 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
       }
     }
 
-    // SETUP - rendre dès qu'on a du contenu
-    const setup = extractSection(fullText, 'SETUP');
-    if (setup !== null && setup.length > 10) {
-      parseAndRenderSetup(setup);
-      if (!stepDone.setup && (fullText.includes('[/SETUP]') || fullText.includes('[POINTS]'))) {
+    // SETUP - rendre UNE SEULE FOIS quand on détecte la fin (prochaine section commencée)
+    if (!stepDone.setup) {
+      const setup = extractSection(fullText, 'SETUP');
+      if (setup !== null && setup.length > 10 && (fullText.includes('[/SETUP]') || fullText.includes('[POINTS]'))) {
+        parseAndRenderSetup(setup);
         stepDone.setup = true;
         setStep(4);
       }
     }
 
-    // POINTS - rendre dès qu'on a du contenu
-    const points = extractSection(fullText, 'POINTS');
-    if (points !== null && points.length > 10) {
-      parseAndRenderPoints(points);
-      if (!stepDone.points && (fullText.includes('[/POINTS]') || fullText.includes('[SCRIPT]'))) {
+    // POINTS - rendre UNE SEULE FOIS quand on détecte la fin
+    if (!stepDone.points) {
+      const points = extractSection(fullText, 'POINTS');
+      if (points !== null && points.length > 10 && (fullText.includes('[/POINTS]') || fullText.includes('[SCRIPT]'))) {
+        parseAndRenderPoints(points);
         stepDone.points = true;
       }
     }
@@ -1186,13 +1186,16 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
       }
     }
 
-    // HASHTAGS - rendre dès qu'on a du contenu
-    const hashtags = extractSection(fullText, 'HASHTAGS');
-    if (hashtags !== null && hashtags.length > 5) {
-      parseAndRenderHashtags(hashtags);
-      if (!stepDone.hashtags && (fullText.includes('[/HASHTAGS]') || hashtags.split('#').length > 5)) {
-        stepDone.hashtags = true;
-        setStep(6);
+    // HASHTAGS - rendre UNE SEULE FOIS quand on a au moins 5 hashtags
+    if (!stepDone.hashtags) {
+      const hashtags = extractSection(fullText, 'HASHTAGS');
+      if (hashtags !== null && hashtags.length > 5) {
+        const hashtagCount = (hashtags.match(/#/g) || []).length;
+        if (fullText.includes('[/HASHTAGS]') || hashtagCount >= 15) {
+          parseAndRenderHashtags(hashtags);
+          stepDone.hashtags = true;
+          setStep(6);
+        }
       }
     }
   }
