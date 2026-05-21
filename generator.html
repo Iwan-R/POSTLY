@@ -1006,7 +1006,15 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
           btn.classList.remove('loading');
           btn.textContent = '✨ Générer mon contenu viral';
           document.getElementById('progressWrap').style.display = 'none';
-          alert('🔒 Tu as atteint ta limite de 10 générations ce mois.\n\nPasse au Plan Pro pour générer sans limite → postly.agency/#pricing');
+
+          // Afficher info reset date
+          if (errData.reset_date) {
+            const resetDate = new Date(errData.reset_date);
+            const days = Math.ceil((resetDate - new Date()) / (1000 * 60 * 60 * 24));
+            document.getElementById('resetInfo').textContent = `Reset dans ${days} jour${days > 1 ? 's' : ''} (le ${resetDate.toLocaleDateString('fr-FR')})`;
+          }
+
+          document.getElementById('upgradePopup').style.display = 'flex';
           return;
         }
         throw new Error('Erreur API: ' + (errData.message || errText));
@@ -1228,5 +1236,34 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
     }
   })();
 </script>
+
+<!-- UPGRADE POPUP -->
+<div id="upgradePopup" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:linear-gradient(135deg, #1a1530 0%, #16132a 100%); border:1px solid rgba(123,111,255,0.3); border-radius:24px; padding:40px 32px; max-width:440px; width:100%; text-align:center; box-shadow:0 20px 60px rgba(90,75,255,0.3); animation:popupIn 0.3s ease;">
+    <div style="font-size:56px; margin-bottom:16px;">🔒</div>
+    <h2 style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800; margin:0 0 12px; background:linear-gradient(135deg,#fff,#a8a3ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Limite atteinte</h2>
+    <p style="color:rgba(255,255,255,0.7); font-size:15px; line-height:1.5; margin:0 0 8px;">Tu as utilisé tes <strong style="color:#fff;">10 générations gratuites</strong> ce mois.</p>
+    <p id="resetInfo" style="color:rgba(255,255,255,0.5); font-size:13px; margin:0 0 28px;"></p>
+
+    <div style="background:rgba(123,111,255,0.08); border:1px solid rgba(123,111,255,0.2); border-radius:16px; padding:20px; margin-bottom:24px; text-align:left;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+        <span style="background:linear-gradient(135deg,#5A4BFF,#7B6FFF); color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;">⚡ PRO</span>
+        <span style="color:#fff; font-weight:600; font-size:18px;">9,99€/mois</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; color:rgba(255,255,255,0.8); font-size:14px;">
+        <div>✓ Générations <strong>illimitées</strong></div>
+        <div>✓ Historique complet</div>
+        <div>✓ Support prioritaire</div>
+      </div>
+    </div>
+
+    <a href="index.html#pricing" style="display:block; background:linear-gradient(135deg,#5A4BFF,#7B6FFF); color:#fff; font-weight:600; padding:14px 24px; border-radius:14px; text-decoration:none; font-size:15px; margin-bottom:10px; box-shadow:0 8px 24px rgba(90,75,255,0.4);">Passer au Pro →</a>
+    <button onclick="document.getElementById('upgradePopup').style.display='none';" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-size:13px; cursor:pointer; padding:8px;">Plus tard</button>
+  </div>
+</div>
+<style>
+  @keyframes popupIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+</style>
+
 </body>
 </html>

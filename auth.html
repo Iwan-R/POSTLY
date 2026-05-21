@@ -585,6 +585,31 @@
       return;
     }
 
+    // Créer profil + subscription si user créé avec succès
+    if (data && data.user) {
+      try {
+        // Profile
+        await window.supabaseClient.from('profiles').upsert({
+          id: data.user.id,
+          email: email,
+          full_name: name
+        }, { onConflict: 'id' });
+
+        // Subscription free par défaut
+        const resetDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        await window.supabaseClient.from('subscriptions').upsert({
+          user_id: data.user.id,
+          plan: 'free',
+          generations_used: 0,
+          generations_limit: 10,
+          reset_date: resetDate,
+          status: 'active'
+        }, { onConflict: 'user_id' });
+      } catch(e) {
+        console.log('Profile/subscription setup error:', e);
+      }
+    }
+
     window.location.href = 'generator.html';
   }
 

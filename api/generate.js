@@ -2,6 +2,21 @@ export const config = {
   runtime: 'edge',
 };
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://rgaftjkxcjxudobfiyyo.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+async function supabaseFetch(path, options = {}) {
+  return fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+}
+
 export default async function handler(req) {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -20,6 +35,83 @@ export default async function handler(req) {
       });
     }
 
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // === VÉRIFICATION QUOTA ===
+    const subRes = await supabaseFetch(
+      `/subscriptions?user_id=eq.${userId}&select=id,plan,generations_used,generations_limit,reset_date,status`,
+      { method: 'GET' }
+    );
+
+    if (!subRes.ok) {
+      console.error('Supabase fetch error:', await subRes.text());
+      return new Response(JSON.stringify({ error: 'Database error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    let subs = await subRes.json();
+    let sub = subs && subs.length > 0 ? subs[0] : null;
+
+    // Si pas de ligne subscription, on la crée (free par défaut)
+    if (!sub) {
+      const newSubRes = await supabaseFetch('/subscriptions', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify({
+          user_id: userId,
+          plan: 'free',
+          generations_used: 0,
+          generations_limit: 10,
+          reset_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active'
+        })
+      });
+      const created = await newSubRes.json();
+      sub = Array.isArray(created) ? created[0] : created;
+    }
+
+    // === AUTO-RESET si reset_date dépassée ===
+    const now = new Date();
+    const resetDate = sub.reset_date ? new Date(sub.reset_date) : null;
+
+    if (resetDate && now > resetDate) {
+      const newResetDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      await supabaseFetch(`/subscriptions?id=eq.${sub.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          generations_used: 0,
+          reset_date: newResetDate
+        })
+      });
+      sub.generations_used = 0;
+      sub.reset_date = newResetDate;
+    }
+
+    // === CHECK LIMITE ===
+    const isUnlimited = sub.plan === 'pro' || sub.plan === 'premium';
+
+    if (!isUnlimited && sub.generations_used >= sub.generations_limit) {
+      return new Response(JSON.stringify({
+        error: 'limit_reached',
+        message: 'Tu as atteint ta limite de générations ce mois',
+        plan: sub.plan,
+        used: sub.generations_used,
+        limit: sub.generations_limit,
+        reset_date: sub.reset_date
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // === GÉNÉRATION OPENAI ===
     const prompt = `Tu es Postly, l'IA de création de contenu viral #1 pour TikTok et Instagram.
 
 NICHE & SUJET : ${niche}
@@ -77,7 +169,6 @@ Script COMPLET mot pour mot adapté à ${duration}. Chaque partie mentionne des 
 20-25 hashtags pour "${niche}" sur ${platform}. Mix populaires + moyens + niche. Format : #hashtag séparés par espaces.
 [/HASHTAGS]`;
 
-    // Appel OpenAI EN STREAMING
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -108,7 +199,17 @@ Script COMPLET mot pour mot adapté à ${duration}. Chaque partie mentionne des 
       });
     }
 
-    // On renvoie le stream directement au client
+    // === INCRÉMENT QUOTA (pour les free seulement) ===
+    if (!isUnlimited) {
+      await supabaseFetch(`/subscriptions?id=eq.${sub.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          generations_used: (sub.generations_used || 0) + 1
+        })
+      });
+    }
+
+    // === STREAM OPENAI → CLIENT ===
     const stream = new ReadableStream({
       async start(controller) {
         const reader = openaiResponse.body.getReader();
