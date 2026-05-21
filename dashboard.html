@@ -433,6 +433,14 @@
     window.supabaseClient = createClient('https://rgaftjkxcjxudobfiyyo.supabase.co', 'sb_publishable_EUPSbTeVs3WHYJZ8E2IF2A_NqYsqtiY', {
       auth: { storage: window.localStorage, storageKey: 'sb-postly-auth', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' }
     });
+
+    // Protection : redirige vers auth.html si pas connecté
+    (async () => {
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      if (!session) {
+        window.location.replace('auth.html');
+      }
+    })();
   </script>
 </head>
 <body>
