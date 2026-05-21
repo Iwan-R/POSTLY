@@ -389,7 +389,7 @@
   <a href="about.html">À propos</a>
   <a href="contact.html">Contact</a>
   <div style="height:1px;background:rgba(255,255,255,0.07);margin:4px 0;"></div>
-  <a href="auth.html" style="background:linear-gradient(135deg,#5A4BFF,#7B6FFF);color:#fff;font-weight:600;border-radius:10px;justify-content:center;">Connexion / Inscription</a>
+  <a href="auth.html" id="mobileAuthLink" style="background:linear-gradient(135deg,#5A4BFF,#7B6FFF);color:#fff;font-weight:600;border-radius:10px;justify-content:center;">Connexion / Inscription</a>
 </div>
 
 <main>
@@ -523,26 +523,34 @@
   (async () => {
     try {
       const navCta = document.querySelector('nav .nav-cta');
-      if (!navCta) return;
-      navCta.style.opacity = '0';
+      const mobileAuth = document.getElementById('mobileAuthLink');
 
       const supabase = window.supabaseClient;
-      if (!supabase) { navCta.style.opacity = '1'; return; }
+      if (!supabase) return;
 
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
-        navCta.textContent = 'Mon compte';
-        navCta.href = 'dashboard.html';
+        if (navCta) {
+          navCta.textContent = 'Mon compte';
+          navCta.href = 'dashboard.html';
+        }
+        if (mobileAuth) {
+          mobileAuth.textContent = 'Mon compte';
+          mobileAuth.href = 'dashboard.html';
+        }
       } else {
-        navCta.textContent = 'Connexion';
-        navCta.href = 'auth.html';
+        if (navCta) {
+          navCta.textContent = 'Connexion';
+          navCta.href = 'auth.html';
+        }
+        if (mobileAuth) {
+          mobileAuth.textContent = 'Connexion / Inscription';
+          mobileAuth.href = 'auth.html';
+        }
       }
-      navCta.style.opacity = '1';
-      navCta.style.transition = 'opacity 0.2s';
     } catch(e) {
-      const navCta = document.querySelector('nav .nav-cta');
-      if (navCta) navCta.style.opacity = '1';
+      console.log('Auth check error:', e);
     }
   })();
 </script>
