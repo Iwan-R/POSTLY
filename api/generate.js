@@ -77,6 +77,7 @@ Script COMPLET mot pour mot adapté à ${duration}. Chaque partie mentionne des 
 20-25 hashtags pour "${niche}" sur ${platform}. Mix populaires + moyens + niche. Format : #hashtag séparés par espaces.
 [/HASHTAGS]`;
 
+    // Appel OpenAI EN STREAMING
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -94,37 +95,68 @@ Script COMPLET mot pour mot adapté à ${duration}. Chaque partie mentionne des 
         ],
         temperature: 0.8,
         max_tokens: 4000,
+        stream: true,
       }),
     });
 
     if (!openaiResponse.ok) {
       const err = await openaiResponse.text();
       console.error('OpenAI error:', err);
-      throw new Error('OpenAI API error');
+      return new Response(JSON.stringify({ error: 'OpenAI API error', details: err }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const data = await openaiResponse.json();
-    const fullText = data.choices[0].message.content;
+    // On renvoie le stream directement au client
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = openaiResponse.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
-    function extractSection(text, tag) {
-      const regex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`);
-      const match = text.match(regex);
-      return match ? match[1].trim() : '';
-    }
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-    const result = {
-      concept: extractSection(fullText, 'CONCEPT'),
-      hooks: extractSection(fullText, 'HOOKS'),
-      description: extractSection(fullText, 'DESCRIPTION'),
-      setup: extractSection(fullText, 'SETUP'),
-      points: extractSection(fullText, 'POINTS'),
-      script: extractSection(fullText, 'SCRIPT'),
-      hashtags: extractSection(fullText, 'HASHTAGS'),
-    };
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
-    return new Response(JSON.stringify(result), {
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6).trim();
+                if (data === '[DONE]') {
+                  controller.close();
+                  return;
+                }
+                try {
+                  const json = JSON.parse(data);
+                  const text = json.choices?.[0]?.delta?.content;
+                  if (text) {
+                    controller.enqueue(new TextEncoder().encode(text));
+                  }
+                } catch (e) {
+                  // skip non-JSON lines
+                }
+              }
+            }
+          }
+          controller.close();
+        } catch (e) {
+          controller.error(e);
+        }
+      },
+    });
+
+    return new Response(stream, {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
 
   } catch (error) {

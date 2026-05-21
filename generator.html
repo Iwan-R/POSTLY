@@ -985,10 +985,11 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
         })
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        if (result.error === 'limit_reached') {
+        const errText = await response.text();
+        let errData = {};
+        try { errData = JSON.parse(errText); } catch(e) {}
+        if (errData.error === 'limit_reached') {
           btn.disabled = false;
           btn.classList.remove('loading');
           btn.textContent = '✨ Générer mon contenu viral';
@@ -996,37 +997,54 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
           alert('🔒 Tu as atteint ta limite de 10 générations ce mois.\n\nPasse au Plan Pro pour générer sans limite → postly.agency/#pricing');
           return;
         }
-        throw new Error('Erreur API');
+        throw new Error('Erreur API: ' + (errData.message || errText));
       }
 
-      // Render all sections
-      setStep(2);
-      document.getElementById('concept-content').textContent = result.concept || '';
-      document.getElementById('concept-content').classList.remove('streaming');
+      // Lire le stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      const stepDone = {};
 
-      setStep(3);
-      document.getElementById('hook-content').textContent = result.hooks || '';
-      document.getElementById('hook-content').classList.remove('streaming');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      document.getElementById('desc-content').textContent = result.description || '';
-      document.getElementById('desc-content').classList.remove('streaming');
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+        renderStreaming(fullText, chunk, stepDone);
+      }
 
-      setStep(4);
-      if (result.setup) parseAndRenderSetup(result.setup);
+      // Render final pour le hashtags qui arrive en dernier
+      const hashtags = extractSection(fullText, 'HASHTAGS');
+      if (hashtags) {
+        parseAndRenderHashtags(hashtags);
+        setStep(6);
+      }
 
-      if (result.points) parseAndRenderPoints(result.points);
-
-      setStep(5);
-      document.getElementById('script-content').textContent = result.script || '';
-      document.getElementById('script-content').classList.remove('streaming');
-
-      setStep(6);
-      if (result.hashtags) parseAndRenderHashtags(result.hashtags);
-
-      const fullText = JSON.stringify(result);
+      // Save to Supabase
+      try {
+        const userId = session.user.id;
+        const hooksSection = extractSection(fullText, 'HOOKS') || '';
+        const firstHook = hooksSection.split('\n')[0].replace('Hook 1 :', '').replace(/"/g, '').trim();
+        await window.supabaseClient.from('generations').insert({
+          user_id: userId,
+          hook: firstHook || niche,
+          platform: selectedPlatform,
+          theme: niche,
+        });
+        const { data: sub } = await window.supabaseClient
+          .from('subscriptions').select('generations_used').eq('user_id', userId).single();
+        if (sub) {
+          await window.supabaseClient.from('subscriptions')
+            .update({ generations_used: (sub.generations_used || 0) + 1 })
+            .eq('user_id', userId);
+        }
+      } catch(e) { console.log('Supabase tracking error:', e); }
 
     } catch(err) {
       console.error(err);
+      alert('Erreur lors de la génération. Réessaie dans quelques secondes.');
     }
 
     // Reset button
@@ -1057,11 +1075,11 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
       }
     }
 
-    // HOOK
-    const hook = extractSection(fullText, 'HOOK');
+    // HOOKS
+    const hook = extractSection(fullText, 'HOOKS');
     if (hook !== null) {
       document.getElementById('hook-content').textContent = hook;
-      if (!stepDone.hook && fullText.includes('[/HOOK]')) {
+      if (!stepDone.hook && fullText.includes('[/HOOKS]')) {
         stepDone.hook = true;
         document.getElementById('hook-content').classList.remove('streaming');
         setStep(2);
