@@ -492,7 +492,10 @@
       <h1>Bonjour, <em>Iwan</em> 👋</h1>
       <p>Voici un aperçu de ton activité sur Postly.</p>
     </div>
-    <div class="plan-badge plan-starter">⚡ Plan Starter</div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <div class="plan-badge plan-starter">⚡ Plan Starter</div>
+      <button onclick="handleLogout()" style="background:transparent; border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.75); padding:8px 16px; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='rgba(255,77,77,0.1)'; this.style.borderColor='rgba(255,77,77,0.4)'; this.style.color='#ff6b6b';" onmouseout="this.style.background='transparent'; this.style.borderColor='rgba(255,255,255,0.15)'; this.style.color='rgba(255,255,255,0.75)';">Déconnexion</button>
+    </div>
   </div>
 
   <!-- GENERATE CTA -->
@@ -700,18 +703,76 @@
 
     async function loadHistory(userId) {
     const { data: gens } = await supabaseClient
-      .from('generations').select('hook, created_at')
+      .from('generations')
+      .select('id, hook, idea, arguments, description, hashtags, theme, platform, format, created_at')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
     if (!gens || !gens.length) return;
+
+    // Stocker en global pour le modal
+    window._historyGens = gens;
+
     const container = document.querySelector('.history-section');
     const list = document.createElement('div');
     list.className = 'history-list';
-    gens.forEach(gen => {
+
+    gens.forEach((gen, index) => {
       const d = new Date(gen.created_at);
       const dateStr = d.toLocaleDateString('fr-FR', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-      list.innerHTML += '<a href="generator.html" class="history-item"><div class="history-platform platform-tiktok">🎵</div><div class="history-info"><div class="history-niche">' + (gen.hook || 'Génération') + '</div><div class="history-meta"><span>' + dateStr + '</span></div></div><div class="history-arrow">›</div></a>';
+      const platformIcon = gen.platform === 'Instagram' ? '📸' : gen.platform === 'YouTube Shorts' ? '▶️' : '🎵';
+      const platformClass = gen.platform === 'Instagram' ? 'platform-ig' : 'platform-tiktok';
+
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.style.cursor = 'pointer';
+      item.onclick = () => openHistoryModal(index);
+      item.innerHTML = '<div class="history-platform ' + platformClass + '">' + platformIcon + '</div>' +
+        '<div class="history-info">' +
+          '<div class="history-niche">' + (gen.hook || gen.theme || 'Génération') + '</div>' +
+          '<div class="history-meta">' +
+            (gen.format ? '<span class="history-tag">' + gen.format + '</span>' : '') +
+            '<span>' + dateStr + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="background:rgba(123,111,255,0.15); color:#a8a3ff; font-size:12px; font-weight:600; padding:6px 14px; border-radius:20px; white-space:nowrap;">Voir le détail →</div>';
+      list.appendChild(item);
     });
+
     container.appendChild(list);
+  }
+
+  function openHistoryModal(index) {
+    const gen = window._historyGens[index];
+    if (!gen) return;
+
+    const d = new Date(gen.created_at);
+    const dateStr = d.toLocaleDateString('fr-FR', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+    document.getElementById('modalDate').textContent = dateStr;
+    document.getElementById('modalPlatform').textContent = gen.platform || '—';
+    document.getElementById('modalFormat').textContent = gen.format || '—';
+    document.getElementById('modalTheme').textContent = gen.theme || '—';
+    document.getElementById('modalHook').textContent = gen.hook || '—';
+    document.getElementById('modalIdea').textContent = gen.idea || '—';
+    document.getElementById('modalArguments').textContent = gen.arguments || '—';
+    document.getElementById('modalDescription').textContent = gen.description || '—';
+    document.getElementById('modalHashtags').textContent = gen.hashtags || '—';
+
+    document.getElementById('historyModal').style.display = 'flex';
+  }
+
+  function closeHistoryModal() {
+    document.getElementById('historyModal').style.display = 'none';
+  }
+
+  async function handleLogout() {
+    if (!confirm('Es-tu sûr de vouloir te déconnecter ?')) return;
+    try {
+      await window.supabaseClient.auth.signOut();
+      window.location.href = 'index.html';
+    } catch(e) {
+      console.error('Logout error:', e);
+      window.location.href = 'index.html';
+    }
   }
 
 </script>
@@ -752,5 +813,61 @@
     }
   })();
 </script>
+
+<!-- HISTORY DETAIL MODAL -->
+<div id="historyModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:9999; align-items:center; justify-content:center; padding:20px; overflow-y:auto;" onclick="if(event.target===this) closeHistoryModal()">
+  <div style="background:linear-gradient(135deg, #1a1530 0%, #16132a 100%); border:1px solid rgba(123,111,255,0.25); border-radius:24px; padding:32px; max-width:680px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.5); animation:popupIn 0.3s ease;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; gap:16px;">
+      <div>
+        <h2 style="font-family:'Syne',sans-serif; font-size:24px; font-weight:800; margin:0 0 6px; background:linear-gradient(135deg,#fff,#a8a3ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Détail de la génération</h2>
+        <p id="modalDate" style="color:rgba(255,255,255,0.5); font-size:13px; margin:0;"></p>
+      </div>
+      <button onclick="closeHistoryModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">✕</button>
+    </div>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;">
+      <span style="background:rgba(123,111,255,0.15); color:#a8a3ff; font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px;" id="modalPlatform"></span>
+      <span style="background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.7); font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px;" id="modalFormat"></span>
+      <span style="background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.7); font-size:12px; font-weight:600; padding:6px 12px; border-radius:20px;" id="modalTheme"></span>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
+        <div style="font-size:11px; font-weight:700; color:#a8a3ff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">🎯 Hook</div>
+        <div id="modalHook" style="color:rgba(255,255,255,0.9); font-size:15px; line-height:1.5; white-space:pre-wrap;"></div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
+        <div style="font-size:11px; font-weight:700; color:#a8a3ff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">💡 Idée / Concept</div>
+        <div id="modalIdea" style="color:rgba(255,255,255,0.9); font-size:14px; line-height:1.5; white-space:pre-wrap;"></div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
+        <div style="font-size:11px; font-weight:700; color:#a8a3ff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">📝 Arguments / Points clés</div>
+        <div id="modalArguments" style="color:rgba(255,255,255,0.9); font-size:14px; line-height:1.5; white-space:pre-wrap;"></div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
+        <div style="font-size:11px; font-weight:700; color:#a8a3ff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">✏️ Description</div>
+        <div id="modalDescription" style="color:rgba(255,255,255,0.9); font-size:14px; line-height:1.5; white-space:pre-wrap;"></div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
+        <div style="font-size:11px; font-weight:700; color:#a8a3ff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;"># Hashtags</div>
+        <div id="modalHashtags" style="color:rgba(255,255,255,0.9); font-size:14px; line-height:1.5; word-break:break-word;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:24px;">
+      <a href="generator.html" style="flex:1; background:linear-gradient(135deg,#5A4BFF,#7B6FFF); color:#fff; font-weight:600; padding:14px 24px; border-radius:14px; text-decoration:none; font-size:14px; text-align:center;">✨ Nouvelle génération</a>
+      <button onclick="closeHistoryModal()" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#fff; font-weight:600; padding:14px 24px; border-radius:14px; cursor:pointer; font-size:14px; font-family:inherit;">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes popupIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+</style>
+
 </body>
 </html>
