@@ -1076,19 +1076,13 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
         const userId = session.user.id;
         const hooksSection = extractSection(fullText, 'HOOKS') || '';
         const firstHook = hooksSection.split('\n')[0].replace('Hook 1 :', '').replace(/"/g, '').trim();
+        // Sauvegarde uniquement l'historique - le compteur quota est géré par le backend
         await window.supabaseClient.from('generations').insert({
           user_id: userId,
           hook: firstHook || niche,
           platform: selectedPlatform,
           theme: niche,
         });
-        const { data: sub } = await window.supabaseClient
-          .from('subscriptions').select('generations_used').eq('user_id', userId).single();
-        if (sub) {
-          await window.supabaseClient.from('subscriptions')
-            .update({ generations_used: (sub.generations_used || 0) + 1 })
-            .eq('user_id', userId);
-        }
       } catch(e) { console.log('Supabase tracking error:', e); }
 
     } catch(err) {
