@@ -1035,12 +1035,41 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
         renderStreaming(fullText, chunk, stepDone);
       }
 
-      // Render final pour le hashtags qui arrive en dernier
-      const hashtags = extractSection(fullText, 'HASHTAGS');
-      if (hashtags) {
-        parseAndRenderHashtags(hashtags);
-        setStep(6);
+      // === RENDU FINAL : on re-render TOUT pour être sûr ===
+      const finalConcept = extractSection(fullText, 'CONCEPT');
+      if (finalConcept) {
+        document.getElementById('concept-content').textContent = finalConcept;
+        document.getElementById('concept-content').classList.remove('streaming');
       }
+
+      const finalHooks = extractSection(fullText, 'HOOKS');
+      if (finalHooks) {
+        document.getElementById('hook-content').textContent = finalHooks;
+        document.getElementById('hook-content').classList.remove('streaming');
+      }
+
+      const finalDesc = extractSection(fullText, 'DESCRIPTION');
+      if (finalDesc) {
+        document.getElementById('desc-content').textContent = finalDesc;
+        document.getElementById('desc-content').classList.remove('streaming');
+      }
+
+      const finalSetup = extractSection(fullText, 'SETUP');
+      if (finalSetup) parseAndRenderSetup(finalSetup);
+
+      const finalPoints = extractSection(fullText, 'POINTS');
+      if (finalPoints) parseAndRenderPoints(finalPoints);
+
+      const finalScript = extractSection(fullText, 'SCRIPT');
+      if (finalScript) {
+        document.getElementById('script-content').textContent = finalScript;
+        document.getElementById('script-content').classList.remove('streaming');
+      }
+
+      const finalHashtags = extractSection(fullText, 'HASHTAGS');
+      if (finalHashtags) parseAndRenderHashtags(finalHashtags);
+
+      setStep(6);
 
       // Save to Supabase
       try {
@@ -1083,9 +1112,12 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
     const closedMatch = text.match(closedRegex);
     if (closedMatch) return closedMatch[1].trim();
 
-    // Pendant le streaming : section pas encore fermée
-    // On extrait entre [TAG] et le prochain [ (qui marque une autre section)
-    const openRegex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?=\\[|$)`);
+    // Pas de balise fermante : on extrait entre [TAG] et la prochaine balise de section connue
+    // (sans confondre avec des [ dans le contenu comme [HOOK - 0:00])
+    const sections = ['CONCEPT', 'HOOKS', 'DESCRIPTION', 'SETUP', 'POINTS', 'SCRIPT', 'HASHTAGS'];
+    const otherSections = sections.filter(s => s !== tag);
+    const stopPattern = otherSections.map(s => `\\[${s}\\]`).join('|');
+    const openRegex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?=${stopPattern}|$)`);
     const openMatch = text.match(openRegex);
     return openMatch ? openMatch[1].trim() : null;
   }
@@ -1124,21 +1156,21 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
       }
     }
 
-    // SETUP
-    if (!stepDone.setup) {
-      const setup = extractSection(fullText, 'SETUP');
-      if (setup !== null && fullText.includes('[/SETUP]')) {
-        parseAndRenderSetup(setup);
+    // SETUP - rendre dès qu'on a du contenu
+    const setup = extractSection(fullText, 'SETUP');
+    if (setup !== null && setup.length > 10) {
+      parseAndRenderSetup(setup);
+      if (!stepDone.setup && (fullText.includes('[/SETUP]') || fullText.includes('[POINTS]'))) {
         stepDone.setup = true;
         setStep(4);
       }
     }
 
-    // POINTS
-    if (!stepDone.points) {
-      const points = extractSection(fullText, 'POINTS');
-      if (points !== null && fullText.includes('[/POINTS]')) {
-        parseAndRenderPoints(points);
+    // POINTS - rendre dès qu'on a du contenu
+    const points = extractSection(fullText, 'POINTS');
+    if (points !== null && points.length > 10) {
+      parseAndRenderPoints(points);
+      if (!stepDone.points && (fullText.includes('[/POINTS]') || fullText.includes('[SCRIPT]'))) {
         stepDone.points = true;
       }
     }
@@ -1154,11 +1186,14 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
       }
     }
 
-    // HASHTAGS
+    // HASHTAGS - rendre dès qu'on a du contenu
     const hashtags = extractSection(fullText, 'HASHTAGS');
-    if (hashtags !== null && fullText.includes('[/HASHTAGS]')) {
+    if (hashtags !== null && hashtags.length > 5) {
       parseAndRenderHashtags(hashtags);
-      setStep(6);
+      if (!stepDone.hashtags && (fullText.includes('[/HASHTAGS]') || hashtags.split('#').length > 5)) {
+        stepDone.hashtags = true;
+        setStep(6);
+      }
     }
   }
 
