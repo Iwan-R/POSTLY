@@ -534,7 +534,46 @@
       return;
     }
 
+    // Si l'user voulait upgrade avant de se connecter, on lance le checkout
+    const pendingPlan = sessionStorage.getItem('pendingCheckout');
+    if (pendingPlan) {
+      sessionStorage.removeItem('pendingCheckout');
+      await launchPendingCheckout(pendingPlan);
+      return;
+    }
+
     window.location.href = 'generator.html';
+  }
+
+  async function launchPendingCheckout(plan) {
+    try {
+      const PRICE_IDS = {
+        pro: 'price_1T7whCPVl2bUzZLqcvBtB1V7',
+        premium: 'price_1T7whnPVl2bUzZLqoTmA51wk'
+      };
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      if (!session) { window.location.href = 'generator.html'; return; }
+
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: PRICE_IDS[plan],
+          userId: session.user.id,
+          userEmail: session.user.email,
+          plan: plan
+        })
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        window.location.href = 'generator.html';
+      }
+    } catch(e) {
+      console.error('Pending checkout error:', e);
+      window.location.href = 'generator.html';
+    }
   }
 
   async function handleSignup() {
@@ -608,6 +647,14 @@
       } catch(e) {
         console.log('Profile/subscription setup error:', e);
       }
+    }
+
+    // Si l'user voulait upgrade avant de s'inscrire, on lance le checkout
+    const pendingPlan = sessionStorage.getItem('pendingCheckout');
+    if (pendingPlan) {
+      sessionStorage.removeItem('pendingCheckout');
+      await launchPendingCheckout(pendingPlan);
+      return;
     }
 
     window.location.href = 'generator.html';

@@ -1289,13 +1289,44 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
       </div>
     </div>
 
-    <a href="index.html#pricing" style="display:block; background:linear-gradient(135deg,#5A4BFF,#7B6FFF); color:#fff; font-weight:600; padding:14px 24px; border-radius:14px; text-decoration:none; font-size:15px; margin-bottom:10px; box-shadow:0 8px 24px rgba(90,75,255,0.4);">Passer au Pro →</a>
+    <button onclick="upgradeToPro()" style="display:block; width:100%; background:linear-gradient(135deg,#5A4BFF,#7B6FFF); color:#fff; font-weight:600; padding:14px 24px; border-radius:14px; border:none; cursor:pointer; font-size:15px; margin-bottom:10px; box-shadow:0 8px 24px rgba(90,75,255,0.4); font-family:inherit;">Passer au Pro →</button>
     <button onclick="document.getElementById('upgradePopup').style.display='none';" style="background:transparent; border:none; color:rgba(255,255,255,0.5); font-size:13px; cursor:pointer; padding:8px;">Plus tard</button>
   </div>
 </div>
 <style>
   @keyframes popupIn { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
 </style>
+
+<script>
+  // Stripe checkout depuis le popup limite atteinte
+  async function upgradeToPro() {
+    try {
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      if (!session) { window.location.href = 'auth.html'; return; }
+
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: 'price_1T7whCPVl2bUzZLqcvBtB1V7',
+          userId: session.user.id,
+          userEmail: session.user.email,
+          plan: 'pro'
+        })
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Erreur lors de la création du paiement');
+      }
+    } catch(e) {
+      console.error('Checkout error:', e);
+      alert('Erreur : ' + e.message);
+    }
+  }
+</script>
 
 </body>
 </html>

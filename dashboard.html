@@ -486,6 +486,16 @@
 
 <main>
 
+  <!-- BANNIÈRE SUCCESS / CANCEL (affichée après checkout Stripe) -->
+  <div id="checkoutBanner" style="display:none; padding:20px 24px; border-radius:16px; margin-bottom:24px; align-items:center; gap:16px;">
+    <div id="checkoutBannerIcon" style="font-size:32px;"></div>
+    <div style="flex:1;">
+      <div id="checkoutBannerTitle" style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px;"></div>
+      <div id="checkoutBannerText" style="font-size:14px; color:rgba(255,255,255,0.7);"></div>
+    </div>
+    <button onclick="document.getElementById('checkoutBanner').style.display='none'; window.history.replaceState({},'',window.location.pathname);" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center;">✕</button>
+  </div>
+
   <!-- GREETING -->
   <div class="greeting">
     <div class="greeting-left">
@@ -619,6 +629,30 @@
 
   // SUPABASE DASHBOARD
   window.addEventListener('DOMContentLoaded', async () => {
+    // Détection retour de Stripe Checkout
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const canceled = urlParams.get('canceled');
+    const planFromUrl = urlParams.get('plan');
+
+    if (success === 'true') {
+      const banner = document.getElementById('checkoutBanner');
+      banner.style.display = 'flex';
+      banner.style.background = 'linear-gradient(135deg, rgba(0,229,160,0.15), rgba(90,75,255,0.15))';
+      banner.style.border = '1px solid rgba(0,229,160,0.35)';
+      document.getElementById('checkoutBannerIcon').textContent = '🎉';
+      document.getElementById('checkoutBannerTitle').textContent = `Bienvenue dans le plan ${planFromUrl === 'premium' ? 'Premium' : 'Pro'} !`;
+      document.getElementById('checkoutBannerText').textContent = 'Ton abonnement est activé. Tu as maintenant des générations illimitées. 🚀';
+    } else if (canceled === 'true') {
+      const banner = document.getElementById('checkoutBanner');
+      banner.style.display = 'flex';
+      banner.style.background = 'rgba(255,255,255,0.04)';
+      banner.style.border = '1px solid rgba(255,255,255,0.1)';
+      document.getElementById('checkoutBannerIcon').textContent = 'ℹ️';
+      document.getElementById('checkoutBannerTitle').textContent = 'Paiement annulé';
+      document.getElementById('checkoutBannerText').textContent = 'Pas de souci, tu peux toujours upgrader plus tard depuis la page Tarifs.';
+    }
+
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (!session) { window.location.href = 'auth.html'; return; }
     const userId = session.user.id;
