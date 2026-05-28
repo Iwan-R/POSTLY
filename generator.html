@@ -1076,12 +1076,24 @@ IMPORTANT : Sois COMPLET, PRÉCIS et ACTIONNABLE. Chaque conseil doit être appl
         const userId = session.user.id;
         const hooksSection = extractSection(fullText, 'HOOKS') || '';
         const firstHook = hooksSection.split('\n')[0].replace('Hook 1 :', '').replace(/"/g, '').trim();
-        // Sauvegarde uniquement l'historique - le compteur quota est géré par le backend
+
+        // Récupérer tout le contenu généré
+        const concept = extractSection(fullText, 'CONCEPT') || '';
+        const points = extractSection(fullText, 'POINTS') || '';
+        const description = extractSection(fullText, 'DESCRIPTION') || '';
+        const hashtags = extractSection(fullText, 'HASHTAGS') || '';
+
+        // Sauvegarde complète - le compteur quota est géré par le backend
         await window.supabaseClient.from('generations').insert({
           user_id: userId,
           hook: firstHook || niche,
+          idea: concept,
+          arguments: points,
+          description: description,
+          hashtags: hashtags,
           platform: selectedPlatform,
           theme: niche,
+          format: selectedDuration || 'Vidéo',
         });
       } catch(e) { console.log('Supabase tracking error:', e); }
 
