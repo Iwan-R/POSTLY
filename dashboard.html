@@ -658,8 +658,14 @@
     const userId = session.user.id;
 
     // Profile - récupérer le prénom avec plusieurs fallbacks
-    const { data: profile } = await supabaseClient
-      .from('profiles').select('full_name').eq('id', userId).single();
+    let profile = null;
+    try {
+      const res = await supabaseClient
+        .from('profiles').select('full_name').eq('id', userId).maybeSingle();
+      profile = res.data;
+    } catch(e) {
+      console.log('Profile fetch skipped:', e);
+    }
 
     let firstName = null;
 
@@ -685,13 +691,13 @@
       document.querySelector('.greeting-left h1').innerHTML = 'Bonjour, <em>' + firstName + '</em> 👋';
 
       // Si le profil n'a pas de full_name, on l'enregistre pour les prochaines fois
-      if (!profile?.full_name && firstName) {
+      if (!profile?.full_name) {
         try {
           await supabaseClient.from('profiles').upsert({
             id: userId,
             full_name: firstName
-          }, { onConflict: 'id' });
-        } catch(e) { console.log('Profile update error:', e); }
+          });
+        } catch(e) { console.log('Profile update skipped:', e); }
       }
     }
 
