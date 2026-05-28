@@ -736,16 +736,37 @@
   });
 
     async function loadHistory(userId) {
-    const { data: gens } = await supabaseClient
-      .from('generations')
-      .select('id, hook, idea, arguments, description, hashtags, script, theme, platform, format, created_at')
-      .eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
-    if (!gens || !gens.length) return;
+    let gens = null;
+    try {
+      const res = await supabaseClient
+        .from('generations')
+        .select('id, hook, idea, arguments, description, hashtags, script, theme, platform, format, created_at')
+        .eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
+      if (res.error) {
+        console.error('Erreur chargement historique:', res.error);
+      }
+      gens = res.data;
+    } catch(e) {
+      console.error('Exception historique:', e);
+    }
+
+    const container = document.querySelector('.history-section');
+
+    // Si pas de génération, afficher un état vide propre
+    if (!gens || !gens.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:40px 24px; text-align:center;';
+      empty.innerHTML = '<div style="font-size:40px; margin-bottom:12px;">📝</div>' +
+        '<div style="color:#fff; font-weight:600; font-size:16px; margin-bottom:6px;">Aucune génération pour l\'instant</div>' +
+        '<div style="color:rgba(255,255,255,0.5); font-size:14px; margin-bottom:20px;">Lance ta première génération pour la retrouver ici.</div>' +
+        '<a href="generator.html" style="display:inline-block; background:linear-gradient(135deg,#5A4BFF,#7B6FFF); color:#fff; font-weight:600; padding:12px 24px; border-radius:12px; text-decoration:none; font-size:14px;">✨ Générer du contenu</a>';
+      container.appendChild(empty);
+      return;
+    }
 
     // Stocker en global pour le modal
     window._historyGens = gens;
 
-    const container = document.querySelector('.history-section');
     const list = document.createElement('div');
     list.className = 'history-list';
 
