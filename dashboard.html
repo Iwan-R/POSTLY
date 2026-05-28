@@ -504,6 +504,7 @@
     </div>
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
       <div class="plan-badge plan-starter">⚡ Plan Starter</div>
+      <button id="manageSubBtn" onclick="openCustomerPortal()" style="display:none; background:rgba(123,111,255,0.12); border:1px solid rgba(123,111,255,0.3); color:#a8a3ff; padding:8px 16px; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='rgba(123,111,255,0.2)';" onmouseout="this.style.background='rgba(123,111,255,0.12)';">Gérer mon abonnement</button>
       <button onclick="handleLogout()" style="background:transparent; border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.75); padding:8px 16px; border-radius:20px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; font-family:inherit;" onmouseover="this.style.background='rgba(255,77,77,0.1)'; this.style.borderColor='rgba(255,77,77,0.4)'; this.style.color='#ff6b6b';" onmouseout="this.style.background='transparent'; this.style.borderColor='rgba(255,255,255,0.15)'; this.style.color='rgba(255,255,255,0.75)';">Déconnexion</button>
     </div>
   </div>
@@ -704,8 +705,8 @@
     // Subscription
     const { data: sub } = await supabaseClient
       .from('subscriptions')
-      .select('plan, generations_used, generations_limit, reset_date')
-      .eq('user_id', userId).single();
+      .select('plan, generations_used, generations_limit, reset_date, stripe_customer_id')
+      .eq('user_id', userId).maybeSingle();
 
     if (sub) {
       const isPro = sub.plan === 'pro' || sub.plan === 'premium';
@@ -737,9 +738,49 @@
         const locked = document.querySelector('.history-locked');
         if (locked) locked.style.display = 'none';
         loadHistory(userId);
+
+        // Afficher le bouton "Gérer mon abonnement" si on a un customer Stripe
+        if (sub.stripe_customer_id) {
+          window._stripeCustomerId = sub.stripe_customer_id;
+          const manageBtn = document.getElementById('manageSubBtn');
+          if (manageBtn) manageBtn.style.display = 'inline-block';
+        }
       }
     }
   });
+
+  // Ouvrir le Customer Portal Stripe
+  async function openCustomerPortal() {
+    const btn = document.getElementById('manageSubBtn');
+    const customerId = window._stripeCustomerId;
+    if (!customerId) {
+      alert('Aucun abonnement actif trouvé.');
+      return;
+    }
+    const originalText = btn.textContent;
+    btn.textContent = 'Chargement...';
+    btn.disabled = true;
+    try {
+      const response = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: customerId })
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Erreur : impossible d\'ouvrir la gestion de l\'abonnement.');
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
+    } catch(e) {
+      console.error('Portal error:', e);
+      alert('Erreur : ' + e.message);
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  }
 
     async function loadHistory(userId) {
     let gens = null;
