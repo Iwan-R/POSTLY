@@ -738,7 +738,7 @@
     async function loadHistory(userId) {
     const { data: gens } = await supabaseClient
       .from('generations')
-      .select('id, hook, idea, arguments, description, hashtags, theme, platform, format, created_at')
+      .select('id, hook, idea, arguments, description, hashtags, script, theme, platform, format, created_at')
       .eq('user_id', userId).order('created_at', { ascending: false }).limit(5);
     if (!gens || !gens.length) return;
 
@@ -789,6 +789,7 @@
     document.getElementById('modalIdea').textContent = gen.idea || '—';
     document.getElementById('modalArguments').textContent = gen.arguments || '—';
     document.getElementById('modalDescription').textContent = gen.description || '—';
+    document.getElementById('modalScript').textContent = gen.script || '—';
     document.getElementById('modalHashtags').textContent = gen.hashtags || '—';
 
     document.getElementById('historyModal').style.display = 'flex';
@@ -884,6 +885,11 @@
       <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
         <div style="font-size:11px; font-weight:700; color:#a8a3ff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">✏️ Description</div>
         <div id="modalDescription" style="color:rgba(255,255,255,0.9); font-size:14px; line-height:1.5; white-space:pre-wrap;"></div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
+        <div style="font-size:11px; font-weight:700; color:#a8a3ff; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">🎬 Script complet</div>
+        <div id="modalScript" style="color:rgba(255,255,255,0.9); font-size:14px; line-height:1.6; white-space:pre-wrap;"></div>
       </div>
 
       <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;">
