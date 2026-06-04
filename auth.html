@@ -548,8 +548,8 @@
   async function launchPendingCheckout(plan) {
     try {
       const PRICE_IDS = {
-        pro: 'price_1T7whCPVl2bUzZLqcvBtB1V7',
-        premium: 'price_1T7whnPVl2bUzZLqoTmA51wk'
+        pro: 'price_1T7wPOB1osiR0euyp1yqYUvw',
+        premium: 'price_1T7wQXB1osiR0euyT1hyGeGm'
       };
       const { data: { session } } = await window.supabaseClient.auth.getSession();
       if (!session) { window.location.href = 'generator.html'; return; }
